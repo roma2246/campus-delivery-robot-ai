@@ -36,6 +36,9 @@ before Week 8.
 - Grid: 5×5; start `(0, 0)`; destination `(4, 4)`.
 - Walls: `(1, 1)` and `(2, 1)`.
 - Each move costs 1. The heuristic is Manhattan distance.
+- Ties on `f = g + h` are broken in favour of the larger `g` (the node closer
+  to the goal), so A* expands only 9 states, against 23 for uninformed
+  uniform-cost search on the same map.
 - Output: a shortest route, route length, and number of expanded states.
 
 ### Bayesian inference
@@ -114,12 +117,56 @@ Requires Python 3.10 or later; no third-party packages are needed.
 python3 main.py
 python3 main.py --no-alert
 python3 main.py --test
+python3 -m unittest discover -s tests -v
+python3 experiment.py
 ```
 
 The default run prints each algorithm's input, key calculation, output, and a
 short explanation. `--no-alert` demonstrates how the Bayesian update changes
-the MDP action. `--test` checks route validity/length, both Bayesian updates,
-and the resulting decisions.
+the MDP action. `--test` runs the quick built-in checks; the `tests/` suite
+(33 unit tests) covers A* optimality from every cell, heuristic admissibility
+and consistency, the Bayes and Bellman numbers, the decision threshold and the
+simulation. `experiment.py` runs 10,000 simulated deliveries per policy and
+writes `results/experiment_results.md` plus two charts (the charts need
+matplotlib; everything else uses only the standard library).
+
+## Project structure
+
+| Path | Purpose |
+|---|---|
+| `main.py` | A*, uniform-cost baseline, Bayes update, one-step MDP, CLI demo |
+| `experiment.py` | Monte Carlo comparison of decision policies and sensor-noise sweep |
+| `tests/` | Unit tests for `main.py` and `experiment.py` |
+| `results/` | Generated tables and charts used in the report |
+| `game.html` | Interactive browser demo with the 3D robot and autopilot |
+| `REPORT.md` | Technical report |
+
+## Results
+
+Full tables: [`results/experiment_results.md`](results/experiment_results.md).
+
+| Policy (project sensor) | Delivered | Discounted return γ=0.9 | Turns | Collisions |
+|---|---:|---:|---:|---:|
+| **Bayes + MDP (ours)** | 100% | **40.8** | 12.5 | 0.27 |
+| Sensor reflex (alert → wait) | 100% | 40.8 | 12.5 | 0.27 |
+| Always Move | 100% | 7.8 | 12.4 | 4.39 |
+| Random | 100% | 15.7 | 19.1 | 1.58 |
+| Always Wait | 0% | −17.3 | — | 0 |
+
+- Using the sensor cuts collisions with blocked corridors 16-fold compared
+  with ignoring it.
+- With this fairly reliable sensor the MDP's choices coincide with the simple
+  rule "wait on alert" — the break-even risk (0.300) lies between the two
+  possible posteriors (0.034 and 0.375).
+- When the sensor produces more false alarms, the probabilistic agent pulls
+  ahead: at P(alert | clear) = 0.6 it scores 27.6 against 19.4 and delivers in
+  12.6 turns instead of 22.8.
+- The Bayesian belief is calibrated: decisions made at a predicted risk of
+  0.363 met a blocked corridor 36.8% of the time.
+
+![Discounted return as the sensor gets noisier](results/noise_sweep.png)
+
+![Q-values and the break-even risk](results/q_values.png)
 
 ## Sample output
 
@@ -131,7 +178,8 @@ Grid: 5x5; start=(0, 0); goal=(4, 4); walls=[(1, 1), (2, 1)]
 1) A* route planning
    Heuristic: Manhattan distance; step cost: 1
    Route: [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
-   Route length: 8 moves; expanded states: 23
+   Route length: 8 moves; expanded states: 9
+   Uninformed baseline (uniform-cost search) expands 23 states
    Next corridor cell to check: (1, 0)
 
 2) Bayesian sensor update
@@ -146,11 +194,12 @@ Grid: 5x5; start=(0, 0); goal=(4, 4); walls=[(1, 1), (2, 1)]
    P(next blocked | clear, Wait) = 0.05; P(next blocked | blocked, Wait) = 0.40
    Rewards (clear/blocked): Move=+10/-20, Wait=-2/+1; V(clear)=+5, V(blocked)=-10; gamma=0.90
    One-step Bellman value(Move) = -1.644; value(Wait) = 1.178
+   Break-even risk: wait when P(blocked) > 0.300
    Recommended action: Wait
 ```
 
-The expanded-state count depends on tie-breaking in the priority queue; route
-cost and the probability/value outputs are deterministic.
+All outputs are deterministic. The expanded-state count depends on the
+tie-breaking rule described above.
 
 ## Live demonstration outline
 
@@ -159,19 +208,18 @@ cost and the probability/value outputs are deterministic.
 3. Explain the two expected-reward calculations and why the robot waits.
 4. Run `python3 main.py --no-alert`; compare the updated probability and
    explain why the action changes to `Move`.
-5. Run `python3 main.py --test` to show the checks passing.
+5. Run `python3 -m unittest discover -s tests -v` to show the 33 tests passing.
+6. Show `results/noise_sweep.png`: why Bayes + MDP matters once the sensor is noisy.
 
 ## Limitations and future development
 
 The map is static, the sensor model and rewards are hypothetical, and the MDP
-uses a one-step expected-reward comparison rather than value iteration. A
+uses a one-step lookahead with hand-chosen next-state values `V(clear) = 5`,
+`V(blocked) = −10` rather than values computed by value iteration. A
 future version could add multiple sensor readings, dynamic obstacle updates,
 replanning, longer-horizon value iteration, and measured sensor probabilities.
 No real campus, student, or personal data is used.
 
 ## AI-use declaration
 
-Complete this section according to the instructor's requirements before
-submission. Suggested disclosure: an AI assistant helped draft project code
-and documentation; the student reviewed the formulas, ran the program and
-checks, and is responsible for explaining and verifying the submitted work.
+See [`AI_DECLARATION.md`](AI_DECLARATION.md).
