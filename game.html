@@ -688,10 +688,14 @@
         const cameFrom = new Map();
         const bestCost = new Map([[key(start), 0]]);
         const exploredCells = [];
+        const closed = new Set();
         let expanded = 0;
         while (open.length) {
-          open.sort((a, b) => a.f - b.f || a.g - b.g);
+          // Lowest f first; on ties prefer the larger g (closer to the goal), as in main.py.
+          open.sort((a, b) => a.f - b.f || b.g - a.g);
           const current = open.shift();
+          if (closed.has(key(current.cell))) continue;
+          closed.add(key(current.cell));
           expanded++;
           exploredCells.push(key(current.cell));
           if (key(current.cell) === key(goal)) {
@@ -1064,7 +1068,6 @@
         if (finished) return;
         const prior = belief;
         const result = bayes(prior, alert);
-        lastPrior = prior;
         lastPrior = prior;
         belief = result.posterior;
         hasReading = true;

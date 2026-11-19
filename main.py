@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from heapq import heappop, heappush
 from itertools import count
-from typing import Iterable
+from typing import Callable, Iterable
 
 Position = tuple[int, int]
 
@@ -65,8 +65,22 @@ def reconstruct_path(
     return list(reversed(path))
 
 
-def a_star(start: Position, goal: Position) -> tuple[list[Position], int]:
-    """Return a shortest path and the number of expanded states."""
+def zero_heuristic(a: Position, b: Position) -> int:
+    """Heuristic that ignores the goal: turns A* into uniform-cost search."""
+    return 0
+
+
+def a_star(
+    start: Position,
+    goal: Position,
+    heuristic: Callable[[Position, Position], int] = manhattan_distance,
+) -> tuple[list[Position], int]:
+    """Return a shortest path and the number of expanded states.
+
+    The frontier is ordered by f = g + h. Ties on f are broken in favour of
+    the larger g (the node closer to the goal), then by insertion order, so
+    the search follows the most promising branch instead of sweeping the map.
+    """
     if start in WALLS or goal in WALLS:
         raise ValueError("Start and goal must not be walls.")
     if not (0 <= start[0] < GRID_SIZE and 0 <= start[1] < GRID_SIZE):
@@ -75,27 +89,34 @@ def a_star(start: Position, goal: Position) -> tuple[list[Position], int]:
         raise ValueError("Goal must be inside the grid.")
 
     sequence = count()
-    frontier: list[tuple[int, int, Position]] = []
-    heappush(frontier, (manhattan_distance(start, goal), next(sequence), start))
+    frontier: list[tuple[int, int, int, Position]] = []
+    heappush(frontier, (heuristic(start, goal), 0, next(sequence), start))
     came_from: dict[Position, Position] = {}
     cost_so_far = {start: 0}
-    expanded = 0
+    closed: set[Position] = set()
 
     while frontier:
-        _, _, current = heappop(frontier)
-        expanded += 1
+        _, _, _, current = heappop(frontier)
+        if current in closed:
+            continue  # stale queue entry for an already expanded cell
+        closed.add(current)
         if current == goal:
-            return reconstruct_path(came_from, current), expanded
+            return reconstruct_path(came_from, current), len(closed)
 
         for neighbor in neighbors(current):
             new_cost = cost_so_far[current] + 1
             if new_cost < cost_so_far.get(neighbor, float("inf")):
                 cost_so_far[neighbor] = new_cost
                 came_from[neighbor] = current
-                priority = new_cost + manhattan_distance(neighbor, goal)
-                heappush(frontier, (priority, next(sequence), neighbor))
+                priority = new_cost + heuristic(neighbor, goal)
+                heappush(frontier, (priority, -new_cost, next(sequence), neighbor))
 
     raise ValueError("No route exists between start and goal.")
+
+
+def uniform_cost_search(start: Position, goal: Position) -> tuple[list[Position], int]:
+    """Uninformed baseline (Week 2): A* with h = 0."""
+    return a_star(start, goal, heuristic=zero_heuristic)
 
 
 def bayes_obstacle_probability(
@@ -157,8 +178,22 @@ def mdp_action_values(
     return values
 
 
+def break_even_probability(rewards: MDPRewards = MDPRewards()) -> float:
+    """P(blocked) at which Move and Wait have equal one-step value.
+
+    Both Q-values are linear in p, so Q(Move) - Q(Wait) = a + b*p and the
+    robot should wait exactly when p > -a / b.
+    """
+    at_clear = mdp_action_values(0.0, rewards)
+    at_blocked = mdp_action_values(1.0, rewards)
+    a = at_clear["Move"] - at_clear["Wait"]
+    b = (at_blocked["Move"] - at_blocked["Wait"]) - a
+    return -a / b
+
+
 def run_demo(sensor_alert: bool = True) -> None:
     path, expanded = a_star(START, GOAL)
+    _, ucs_expanded = uniform_cost_search(START, GOAL)
     next_cell = path[1]
 
     sensor = SensorModel(
@@ -180,6 +215,7 @@ def run_demo(sensor_alert: bool = True) -> None:
     print(f"   Heuristic: Manhattan distance; step cost: 1")
     print(f"   Route: {path}")
     print(f"   Route length: {len(path) - 1} moves; expanded states: {expanded}")
+    print(f"   Uninformed baseline (uniform-cost search) expands {ucs_expanded} states")
     print(f"   Next corridor cell to check: {next_cell}")
 
     print("\n2) Bayesian sensor update")
@@ -217,6 +253,7 @@ def run_demo(sensor_alert: bool = True) -> None:
         f"   One-step Bellman value(Move) = {values['Move']:.3f}; "
         f"value(Wait) = {values['Wait']:.3f}"
     )
+    print(f"   Break-even risk: wait when P(blocked) > {break_even_probability():.3f}")
     print(f"   Recommended action: {action}")
     print(
         "\nExplanation: A* proposes the shortest static route, Bayes updates "
@@ -230,6 +267,7 @@ def self_test() -> None:
     assert path[0] == START and path[-1] == GOAL
     assert all(cell not in WALLS for cell in path)
     assert len(path) - 1 == 8
+    assert a_star(START, GOAL)[1] < uniform_cost_search(START, GOAL)[1]
 
     model = SensorModel(0.15, 0.85, 0.25)
     _, p_blocked_after_alert, _ = bayes_obstacle_probability(model, True)
