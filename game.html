@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1119">
+  <title>Campus AI — доставка роботом</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070d1c;
+      --panel: #101a30;
+      --panel-2: #152440;
+      --line: #273958;
+      --muted: #91a5c4;
+      --text: #edf3ff;
+      --mint: #55aaff;
+      --mint-dark: #14284b;
+      --orange: #ff717d;
+      --red: #ff5968;
+      --blue: #70bdff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 12% 0%, #122a56 0, transparent 34rem),
+        radial-gradient(ellipse at 100% 80%, #301a38 0, transparent 34rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button { font: inherit; }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 42px) 36px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 30px; }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+      display: grid; width: 44px; height: 44px; place-items: center;
+      border: 1px solid #38639e; border-radius: 14px; background: #14294b;
+      color: var(--mint); font-size: 22px; box-shadow: 0 0 30px #55aaff24;
+    }
+    .brand-title { margin: 0; font-size: 15px; letter-spacing: .14em; font-weight: 800; }
+    .brand-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .13em; text-transform: uppercase; }
+    .top-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .tag { border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: #b7c8d1; background: #111b25; font-size: 11px; }
+    .tag.live { border-color: #3a649a; color: var(--mint); }
+
+    .intro { margin-bottom: 23px; }
+    .eyebrow { color: var(--mint); font-size: 11px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: 8px 0 7px; font-size: clamp(26px, 4vw, 38px); line-height: 1.1; letter-spacing: -.04em; }
+    .intro p { max-width: 700px; margin: 0; color: #9cafbb; font-size: 14px; line-height: 1.6; }
+
+    .game-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr); gap: 18px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(160deg, #14222d, #101a24 75%); box-shadow: 0 18px 60px #00000024; }
+    .map-panel { overflow: hidden; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 19px 21px; border-bottom: 1px solid var(--line); }
+    .panel-title { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+    .panel-kicker { color: var(--muted); font-size: 11px; }
+    .map-wrap { padding: clamp(15px, 3vw, 30px); }
+    .map-meta { display: flex; align-items: center; justify-content: space-between; margin: 0 0 13px; color: #a7bac4; font-size: 12px; }
+    .map-meta strong { color: var(--mint); font-weight: 700; }
+    .board {
+      position: relative; display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: clamp(5px, 1vw, 10px); width: min(100%, 590px); margin: 0 auto;
+      padding: clamp(9px, 1.4vw, 15px); border: 1px solid #263d4a; border-radius: 18px;
+      background-color: #0b151d;
+      background-image: linear-gradient(#12232d 1px, transparent 1px), linear-gradient(90deg, #12232d 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .cell {
+      position: relative; display: grid; aspect-ratio: 1; place-items: center; min-width: 0;
+      border: 1px solid #263946; border-radius: clamp(8px, 1.2vw, 13px);
+      background: #13212a; color: #6c8492; font-size: clamp(10px, 1.7vw, 16px);
+      transition: background .2s, border .2s, transform .2s, box-shadow .2s;
+    }
+    .cell.route { border-color: #315d9a; background: #172e52; color: #9acbff; }
+    .cell.visited { border-color: #3677bd; background: #1c4672; color: #e0f1ff; }
+    .cell.current {
+      z-index: 1; border-color: var(--mint); background: #246eb4; color: white;
+      box-shadow: 0 0 0 3px #55aaff29, 0 0 27px #55aaff44; transform: scale(1.05);
+    }
+    .cell.wall { border-color: #804752; background: #482b3d; color: #ff9aa2; }
+    .cell.goal { border-color: #6b5b39; background: #453b27; color: #ffe09b; }
+    .cell .icon { z-index: 2; }
+    .cell .coords { position: absolute; right: 5px; bottom: 3px; color: #8299a5; font-size: 8px; opacity: .7; }
+    .route-line { position: absolute; inset: 15px; z-index: 1; pointer-events: none; }
+    .route-line svg { width: 100%; height: 100%; overflow: visible; }
+    .route-line polyline { fill: none; stroke: #55aaff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 4 5; opacity: .52; vector-effect: non-scaling-stroke; }
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 17px 0 1px; color: #a6b8c2; font-size: 11px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 3px; background: var(--mint); }
+    .dot.wall-dot { background: #d75f70; } .dot.goal-dot { background: #e9c66c; } .dot.path-dot { background: #488cce; }
+
+    .map-footer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; padding: 0 20px 19px; }
+    .mini-stat { padding: 12px 13px; border: 1px solid #2a3a57; border-radius: 12px; background: #0d172b; }
+    .mini-stat span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .mini-stat strong { display: block; margin-top: 5px; font-size: 15px; }
+
+    .side { display: grid; gap: 14px; }
+    .status-card { padding: 18px; }
+    .status-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .status-name { font-size: 14px; font-weight: 750; }
+    .status-chip { padding: 5px 9px; border: 1px solid #3a6395; border-radius: 999px; color: #8fc8ff; background: #172c4a; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+    .status-chip.warn { border-color: #8e3d50; color: #ff8994; background: #3d2031; }
+    .status-text { min-height: 40px; margin: 12px 0 15px; color: #a9bac4; font-size: 12px; line-height: 1.55; }
+    .risk-head { display: flex; justify-content: space-between; color: #a8bac4; font-size: 11px; }
+    .risk-head strong { color: var(--text); font-size: 12px; }
+    .meter { height: 8px; margin-top: 8px; overflow: hidden; border-radius: 99px; background: #263451; }
+    .meter-fill { width: 15%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #4ba9ff, #8b83ff 65%, #ff5968); transition: width .4s ease; }
+    .prob-caption { display: flex; justify-content: space-between; margin-top: 6px; color: #718996; font-size: 10px; }
+    .signal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+    .btn { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; padding: 10px 12px; border: 1px solid #394d70; border-radius: 11px; background: #172541; color: #e5edff; font-weight: 700; font-size: 12px; cursor: pointer; transition: .18s ease; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); border-color: #68b7ff; background: #1a3155; }
+    .btn:disabled { opacity: .42; cursor: not-allowed; }
+    .btn.primary { border-color: #438ed6; background: #205a99; color: #f3f8ff; box-shadow: 0 5px 18px #3a8bdf30; }
+    .btn.primary:hover:not(:disabled) { background: #286fb5; }
+    .btn.alert-btn:hover:not(:disabled) { border-color: #e56878; background: #412438; }
+    .scan-btn { width: 100%; margin-top: 8px; }
+    .algo-card { padding: 17px 18px; }
+    .algo-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+    .algo-title h2 { margin: 0; font-size: 13px; }
+    .algo-title span { color: var(--muted); font-size: 10px; }
+    .q-row { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 9px; margin: 9px 0; color: #afc0c9; font-size: 11px; }
+    .q-track { height: 6px; overflow: hidden; border-radius: 8px; background: #263451; }
+    .q-fill { height: 100%; width: 50%; border-radius: 8px; background: var(--blue); transition: width .35s ease; }
+    .q-fill.wait { background: var(--red); }
+    .q-value { min-width: 40px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+    .recommend { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; padding: 11px 12px; border: 1px solid #31527c; border-radius: 12px; background: #152544; }
+    .recommend span { color: #a5b8bf; font-size: 11px; }
+    .recommend strong { color: #82c1ff; font-size: 12px; }
+    .apply-btn { width: 100%; margin-top: 10px; }
+    .log-card { padding: 16px 18px; }
+    .log-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .log-head h2 { margin: 0; font-size: 12px; }
+    .text-btn { border: 0; padding: 3px; background: transparent; color: #8da3b2; font-size: 10px; cursor: pointer; }
+    .log { display: grid; gap: 8px; max-height: 116px; overflow: auto; padding-right: 3px; }
+    .log-entry { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 7px; color: #9cafb9; font-size: 10px; line-height: 1.45; }
+    .log-entry time { color: #59717e; font-variant-numeric: tabular-nums; }
+    .log-entry b { color: #d5e7e8; font-weight: 650; }
+    .howto { margin-top: 18px; padding: 15px 18px; border: 1px solid #263b47; border-radius: 15px; background: #101b24b8; color: #95aab4; font-size: 11px; line-height: 1.6; }
+    .howto strong { color: #dbe8ea; }
+    .toast { position: fixed; right: 22px; bottom: 22px; z-index: 10; max-width: min(380px, calc(100vw - 32px)); padding: 13px 16px; border: 1px solid #456da0; border-radius: 13px; background: #142441; color: #e3f1ff; font-size: 12px; line-height: 1.5; box-shadow: 0 10px 40px #0008; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .25s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .finished { border-color: #55aaff; box-shadow: 0 0 0 2px #55aaff1c, 0 18px 60px #0005; }
+    .mission-strip { display: grid; grid-template-columns: 1.15fr 1fr 1fr 1.1fr; gap: 10px; margin: -4px 0 20px; }
+    .mission-tile { min-width: 0; padding: 13px 15px; border: 1px solid #293a5a; border-radius: 14px; background: linear-gradient(145deg, #121f38, #0d172a); }
+    .mission-label { display: flex; align-items: center; gap: 7px; color: #8096b8; font-size: 9px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .mission-label i { width: 7px; height: 7px; border-radius: 50%; background: #55aaff; box-shadow: 0 0 11px #55aaff88; }
+    .mission-value { display: block; overflow: hidden; margin-top: 7px; color: #ecf4ff; font-size: 13px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .mission-note { display: block; margin-top: 3px; color: #8496b3; font-size: 10px; }
+    .energy-line { height: 4px; margin-top: 7px; overflow: hidden; border-radius: 99px; background: #263451; }
+    .energy-fill { width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #4da8ff, #7a8fff); transition: width .35s ease; }
+    .engine-section { margin-top: 18px; }
+    .engine-heading { display: flex; justify-content: space-between; align-items: end; gap: 15px; margin-bottom: 11px; }
+    .engine-heading h2 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
+    .engine-heading p { margin: 4px 0 0; color: #899dbb; font-size: 11px; }
+    .engine-heading .live-state { color: #77bfff; font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .engine-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+    .engine-card { position: relative; overflow: hidden; min-height: 143px; padding: 15px; border: 1px solid #293958; border-radius: 15px; background: linear-gradient(145deg, #121f37, #0e1729); }
+    .engine-card::after { position: absolute; top: -25px; right: -25px; width: 82px; height: 82px; border-radius: 50%; background: #428fe218; content: ""; }
+    .engine-card.bayes-card::after { background: #ff596817; }
+    .engine-card.mdp-card::after { background: #7881ff18; }
+    .engine-top { position: relative; z-index: 1; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .engine-name { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; }
+    .engine-icon { display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid #365885; border-radius: 8px; background: #182d4e; color: #83c4ff; font-size: 12px; }
+    .bayes-card .engine-icon { border-color: #714052; background: #392338; color: #ff8b98; }
+    .mdp-card .engine-icon { border-color: #514d83; background: #292848; color: #a7a5ff; }
+    .engine-status { color: #83a0c4; font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .engine-result { position: relative; z-index: 1; margin: 13px 0 4px; color: #eef4ff; font-size: 14px; font-weight: 800; }
+    .engine-detail { position: relative; z-index: 1; color: #8fa1bd; font-size: 10px; line-height: 1.5; }
+    .engine-detail strong { color: #c8d8ee; font-weight: 700; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+    @media (max-width: 900px) { .game-layout { grid-template-columns: 1fr; } .side { grid-template-columns: repeat(2, minmax(0, 1fr)); } .log-card { grid-column: 1 / -1; } .mission-strip { grid-template-columns: repeat(2, 1fr); } }
+    .map-telemetry { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 650px) { .engine-grid { grid-template-columns: 1fr; } .engine-card { min-height: 0; } }
+    @media (max-width: 580px) {
+      .shell { padding: 18px 13px 26px; }
+      .topbar { align-items: flex-start; margin-bottom: 24px; }
+      .top-tags { max-width: 120px; }
+      .tag { padding: 6px 8px; font-size: 9px; }
+      .brand-mark { width: 38px; height: 38px; }
+      .brand-title { font-size: 12px; }
+      .brand-subtitle { font-size: 9px; }
+      .side { grid-template-columns: 1fr; }
+      .mission-strip { gap: 7px; }
+      .mission-tile { padding: 11px; }
+      .mission-value { font-size: 12px; }
+      .engine-heading { align-items: start; flex-direction: column; gap: 5px; }
+      .log-card { grid-column: auto; }
+      .map-footer { padding-inline: 12px; }
+      .mini-stat { padding: 10px 9px; }
+      .mini-stat strong { font-size: 13px; }
+      .panel-head { padding: 15px; }
+      .route-line { inset: 10px; }
+      .cell .coords { right: 3px; bottom: 2px; font-size: 7px; }
+      .map-wrap { padding: 15px 10px 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --panel: rgba(15, 23, 36, .86);
+      --panel-2: rgba(18, 30, 48, .82);
+      --line: rgba(56, 189, 248, .25);
+      --muted: #8293a8;
+      --text: #e7eef8;
+      --mint: #38bdf8;
+      --blue: #38bdf8;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 42% -20%, #14233a 0, transparent 55rem), #0b0f17;
+    }
+    .shell { max-width: 1680px; padding: 18px 24px 20px; }
+    .topbar { margin-bottom: 12px; }
+    .brand-mark { border-color: var(--line); background: #10243a; color: #7dd3fc; box-shadow: none; }
+    .brand-title { font-size: 13px; letter-spacing: .2em; }
+    .brand-subtitle { font-size: 9px; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
+    .tag, .btn, .text-btn { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .tag.live { border-color: #1e7496; color: #7dd3fc; background: #102133; }
+    .tag { border-color: var(--line); background: rgba(14, 23, 37, .82); color: #9eb0c4; }
+    .help-button, .view-button, .xray-button {
+      min-height: 34px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px;
+      background: rgba(13, 23, 37, .9); color: #b7c8dc; font-size: 10px; font-weight: 750;
+      cursor: pointer; transition: .18s ease;
+    }
+    .help-button:hover, .view-button:hover, .xray-button:hover { border-color: #38bdf8; color: #e0f2fe; }
+    .intro { margin-bottom: 13px; }
+    .eyebrow { color: #7dd3fc; font-size: 9px; }
+    h1 { margin: 5px 0; font-size: clamp(22px, 2.4vw, 30px); }
+    .intro p { max-width: 720px; font-size: 11px; }
+    .mission-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin: 0 0 10px; }
+    .mission-tile { padding: 8px 10px; border-color: var(--line); border-radius: 10px; background: rgba(13, 21, 33, .78); backdrop-filter: blur(12px); }
+    .mission-label { font-size: 8px; letter-spacing: .09em; }
+    .mission-label i { width: 6px; height: 6px; background: #38bdf8; box-shadow: none; }
+    .mission-value { margin-top: 5px; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; }
+    .mission-note { font-size: 8px; }
+    .energy-line { margin-top: 5px; }
+    .dashboard { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(390px, 1fr); gap: 13px; align-items: start; }
+    .main-column { min-width: 0; }
+    .game-layout { display: block; }
+    .panel {
+      border: 1px solid var(--line); border-radius: 14px;
+      background: rgba(13, 20, 32, .78); backdrop-filter: blur(12px);
+      box-shadow: none;
+    }
+    .map-panel { overflow: hidden; }
+    .panel-head { padding: 11px 14px; border-color: rgba(56, 189, 248, .16); }
+    .panel-title { font-size: 10px; letter-spacing: .12em; }
+    .panel-kicker { font: 9px "JetBrains Mono", ui-monospace, monospace; }
+    .map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 14px 0; }
+    .map-toolbar-group { display: flex; gap: 6px; }
+    .view-button, .xray-button { min-height: 29px; padding: 5px 8px; font-size: 9px; }
+    .xray-button[aria-pressed="true"], .view-button[aria-pressed="true"] { border-color: #38bdf8; color: #7dd3fc; background: #10253a; }
+    .map-wrap { padding: 8px 18px 13px; }
+    .map-meta { margin-bottom: 5px; font-size: 9px; }
+    .board-frame {
+      display: grid; min-height: 370px; place-items: center; overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, .12); border-radius: 13px;
+      background: radial-gradient(ellipse at center, rgba(20, 43, 67, .28), transparent 68%), #0a111d;
+      perspective: 900px;
+    }
+    .board {
+      width: min(68%, 385px); gap: 7px; padding: 10px; overflow: visible;
+      border: 1px solid rgba(56, 189, 248, .24); border-radius: 10px;
+      background-color: #0d1a2a;
+      background-image: linear-gradient(rgba(56, 189, 248, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, .08) 1px, transparent 1px);
+      background-size: 26px 26px;
+      transform: perspective(900px) rotateX(48deg) rotateZ(-28deg);
+      transform-style: preserve-3d; transition: transform .5s ease;
+    }
+    .board.top-view { transform: perspective(900px) rotateX(0) rotateZ(0); }
+    .cell {
+      overflow: visible; border-color: rgba(91, 128, 163, .25); border-radius: 5px;
+      background: rgba(21, 37, 56, .94); color: #64819f; font-size: 11px;
+      transform-style: preserve-3d; transition: all .4s cubic-bezier(.22, 1, .36, 1);
+    }
+    .cell.route { border-color: rgba(56, 189, 248, .6); background: rgba(14, 52, 82, .88); color: #c4eaff; }
+    .cell.route::after {
+      position: absolute; top: 50%; left: 50%; content: "›"; color: #b8e7ff;
+      font: 700 22px/1 ui-monospace, monospace; opacity: .8;
+      transform: translate(-50%, -50%) rotate(var(--route-angle, 0deg)); text-shadow: 0 0 9px #38bdf8;
+      pointer-events: none;
+    }
+    .cell.visited { border-color: #3296c5; background: rgba(16, 59, 85, .92); color: #d8f3ff; }
+    .cell.current {
+      z-index: 4; border-color: #7dd3fc; background: #12618a; color: #fff;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, .26), 0 0 18px rgba(56, 189, 248, .7);
+      transform: translateZ(24px) scale(1.13);
+    }
+    .cell.wall {
+      z-index: 2; overflow: visible; border-color: #f87171; border-radius: 3px;
+      background: linear-gradient(145deg, #283246, #151d2b 65%); color: #ff9a9a;
+      box-shadow: 4px 5px 0 #111827, 7px 8px 0 #080d16, 0 0 10px rgba(239, 68, 68, .25);
+      transform: translateZ(18px);
+    }
+    .cell.wall::before, .cell.wall::after { position: absolute; content: ""; pointer-events: none; }
+    .cell.wall::before {
+      top: 4px; right: -7px; width: 7px; height: calc(100% - 1px);
+      background: linear-gradient(180deg, #803b4d, #263044); border-right: 1px solid #e45a68;
+      transform: skewY(42deg); transform-origin: left top;
+    }
+    .cell.wall::after {
+      left: 4px; bottom: -7px; width: calc(100% - 1px); height: 7px;
+      background: linear-gradient(90deg, #613245, #1d2739); border-bottom: 1px solid #a93e54;
+      transform: skewX(48deg); transform-origin: left top;
+    }
+    .cell.goal { z-index: 2; overflow: visible; border-color: #e8c66c; background: #403925; color: #ffe8a3; transform: translateZ(10px); }
+    .cell.goal::before {
+      position: absolute; inset: -10%; border: 1px solid rgba(250, 204, 21, .85); border-radius: 50%;
+      content: ""; animation: beacon-pulse 1.8s ease-out infinite; transform: translateZ(-5px);
+    }
+    .cell.goal::after {
+      position: absolute; top: -25%; left: 46%; width: 8%; height: 55%;
+      content: ""; background: linear-gradient(180deg, rgba(250, 204, 21, .7), transparent);
+      transform: translateZ(12px); pointer-events: none;
+    }
+    .cell.next-scan { z-index: 3; overflow: visible; border-color: #38bdf8; }
+    .cell.next-scan::before {
+      position: absolute; inset: -16%; border: 2px solid #38bdf8; border-radius: 50%; content: "";
+      animation: radar-pulse 1.5s ease-out infinite; pointer-events: none; transform: translateZ(12px);
+    }
+    .cell.next-scan[data-signal="alert"]::before { border-color: #ef4444; animation-duration: .7s; }
+    .cell.next-scan[data-signal="clear"]::before { border-color: #10b981; animation-duration: 1.6s; }
+    .scan-label {
+      position: absolute; left: 50%; bottom: calc(100% + 15px); z-index: 8; width: max-content;
+      padding: 3px 5px; border: 1px solid rgba(56, 189, 248, .62); border-radius: 4px;
+      background: #0c1a2b; color: #bfe9ff; font: 700 7px "JetBrains Mono", ui-monospace, monospace;
+      transform: translateX(-50%) translateZ(22px); pointer-events: none;
+    }
+    .cell.next-scan[data-signal="alert"] .scan-label { border-color: #ef4444; color: #ff9c9c; background: #2a111b; }
+    .cell.next-scan[data-signal="clear"] .scan-label { border-color: #10b981; color: #6ee7b7; background: #0b211d; }
+    .cell.explored { animation: lidar-flash .42s ease-out both; }
+    .cell .coords { z-index: 1; font: 7px "JetBrains Mono", ui-monospace, monospace; }
+    .cell.wall .coords { color: #ffc0c0; }
+    .cell .icon { z-index: 3; }
+    .cell.route .icon { opacity: 0; }
+    .cell.current .icon { filter: drop-shadow(0 0 5px #7dd3fc); }
+    .cell.current:not(.goal)::before {
+      position: absolute; top: -20%; left: 36%; width: 28%; height: 45%; z-index: 1;
+      content: ""; background: linear-gradient(180deg, rgba(125, 211, 252, .6), transparent);
+      filter: blur(2px); transform: translateZ(8px); pointer-events: none;
+    }
+    .cell .xray-info {
+      position: absolute; right: 2px; bottom: 1px; z-index: 6;
+      padding: 1px 2px; border-radius: 2px; background: #06101be8; color: #8bd5ff;
+      font: 6px "JetBrains Mono", ui-monospace, monospace; white-space: pre; transform: translateZ(2px);
+    }
+    .route-line polyline { display: none; }
+    .legend { margin-top: 11px; gap: 10px; font-size: 9px; }
+    .dot.wall-dot { background: #ef4444; }
+    .map-footer { gap: 6px; padding: 0 14px 12px; }
+    .mini-stat { padding: 8px 9px; border-color: rgba(56, 189, 248, .16); border-radius: 9px; background: rgba(11, 18, 29, .72); }
+    .mini-stat span { font-size: 8px; }
+    .mini-stat strong { margin-top: 4px; font: 700 11px "JetBrains Mono", ui-monospace, monospace; }
+    .side { display: grid; grid-template-columns: 1fr; gap: 0; }
+    .pipeline-title { display: flex; justify-content: space-between; align-items: center; margin: 0 0 8px; padding: 0 2px; }
+    .pipeline-title h2 { margin: 0; font-size: 12px; letter-spacing: .11em; }
+    .pipeline-title span { color: #6f879f; font: 8px "JetBrains Mono", ui-monospace, monospace; }
+    .pipeline-block { position: relative; }
+    .pipeline-block + .pipeline-block { margin-top: 15px; }
+    .pipeline-block + .pipeline-block::before {
+      position: absolute; top: -15px; left: 20px; width: 1px; height: 15px;
+      background: linear-gradient(180deg, rgba(56, 189, 248, .15), #38bdf8); content: "";
+    }
+    .pipeline-block.data-pulse::before { animation: data-flow .55s ease-out; }
+    .status-card { padding: 12px; }
+    .status-name { font-size: 11px; }
+    .status-chip { padding: 4px 7px; font-size: 8px; }
+    .status-chip.warn { border-color: rgba(239, 68, 68, .7); color: #ff8383; background: rgba(91, 22, 33, .5); }
+    .status-text { min-height: 27px; margin: 7px 0 8px; font-size: 9px; line-height: 1.4; }
+    .risk-head { font-size: 9px; }
+    .risk-head strong { font: 700 10px "JetBrains Mono", ui-monospace, monospace; }
+    .prob-caption { font-size: 8px; }
+    .scan-btn { margin-top: 9px; }
+    .btn { min-height: 34px; padding: 7px 9px; border-color: var(--line); border-radius: 8px; background: #142037; font-size: 9px; }
+    .btn.primary { border-color: #1687bb; background: #0c4569; box-shadow: none; }
+    .btn.primary:hover:not(:disabled) { background: #105c87; }
+    .btn.alert-btn:hover:not(:disabled) { border-color: #ef4444; background: #351722; }
+    .signal-buttons { gap: 6px; margin-top: 6px; }
+    .algo-card { padding: 11px 12px; transition: border-color .25s, background .25s; }
+    .algo-card.recommend-wait { border-color: rgba(239, 68, 68, .52); background: rgba(43, 23, 34, .82); }
+    .algo-title { margin-bottom: 9px; }
+    .algo-title h2 { font-size: 10px; }
+    .algo-title span { font: 8px "JetBrains Mono", ui-monospace, monospace; }
+    .q-row { grid-template-columns: 39px 1fr auto; gap: 7px; margin: 7px 0; font-size: 9px; }
+    .q-track { height: 5px; background: #202c41; }
+    .q-fill { background: #38bdf8; }
+    .q-fill.wait { background: #f59e0b; }
+    .q-value { font: 700 9px "JetBrains Mono", ui-monospace, monospace; }
+    .recommend { margin-top: 8px; padding: 8px 9px; border-color: rgba(56, 189, 248, .25); background: rgba(14, 33, 54, .7); }
+    .recommend.wait-state { border-color: rgba(239, 68, 68, .55); background: rgba(70, 27, 38, .56); }
+    .recommend span { font-size: 9px; }
+    .recommend strong { color: #7dd3fc; font: 700 10px "JetBrains Mono", ui-monospace, monospace; }
+    .recommend.wait-state strong { color: #ff9a7a; }
+    .apply-btn { min-height: 38px; margin-top: 7px; border-color: #1687bb; background: #0c4569; font-size: 10px; }
+    .apply-btn.action-wait { border-color: #d97706; background: #6a3d08; color: #fff0cb; }
+    .apply-btn.action-move { border-color: #1687bb; background: #0c4569; color: #effaff; }
+    .engine-section { margin: 0; }
+    .engine-heading { margin: 0 0 7px; }
+    .engine-heading h2 { font-size: 10px; letter-spacing: .1em; }
+    .engine-heading p, .engine-heading .live-state { font-size: 8px; }
+    .engine-heading p { display: none; }
+    .engine-grid { grid-template-columns: 1fr; gap: 5px; }
+    .engine-card { min-height: 0; padding: 8px 9px; border-color: rgba(56, 189, 248, .17); border-radius: 9px; background: rgba(11, 18, 30, .65); }
+    .engine-card::after { display: none; }
+    .engine-top { justify-content: flex-start; }
+    .engine-name { gap: 6px; font-size: 9px; }
+    .engine-icon { width: 20px; height: 20px; border-radius: 6px; font-size: 9px; }
+    .engine-status { margin-left: auto; font-size: 7px; }
+    .engine-result { margin: 5px 0 2px 26px; font: 700 9px "JetBrains Mono", ui-monospace, monospace; }
+    .engine-detail { margin-left: 26px; font-size: 8px; line-height: 1.35; }
+    .log-card { padding: 9px 11px; }
+    .log-head { margin: 0; }
+    .log-head h2 { font-size: 9px; }
+    .text-btn { font-size: 8px; }
+    .log { max-height: 92px; gap: 5px; margin-top: 7px; }
+    .log-entry { grid-template-columns: 47px minmax(0, 1fr); font-size: 8px; }
+    .log-entry time { font: 7px "JetBrains Mono", ui-monospace, monospace; }
+    .howto { display: none; }
+    .toast { right: 15px; bottom: 15px; max-width: 340px; padding: 9px 12px; border-color: var(--line); background: #111f34; font-size: 10px; }
+    .finished { border-color: #38bdf8; box-shadow: none; }
+    .map-telemetry { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+    .map-telemetry-item { display: flex; justify-content: space-between; align-items: center; gap: 5px; padding: 8px 9px; border: 1px solid rgba(56, 189, 248, .16); border-radius: 9px; background: rgba(13, 21, 33, .78); }
+    .map-telemetry-item span { color: #788ca5; font-size: 7px; font-weight: 800; letter-spacing: .08em; }
+    .map-telemetry-item strong { color: #e4efff; font: 700 10px "JetBrains Mono", ui-monospace, monospace; white-space: nowrap; }
+    .log-actions { display: flex; align-items: center; gap: 8px; color: #7489a3; font: 8px "JetBrains Mono", ui-monospace, monospace; }
+    .log-actions .text-btn { color: #9db0c7; }
+    .disclosure { font-size: 12px; transition: transform .2s; }
+    .log-details[open] .disclosure { transform: rotate(180deg); }
+    .help-modal {
+      position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center;
+      padding: 20px; background: rgba(3, 7, 13, .78); backdrop-filter: blur(8px);
+    }
+    .help-modal.open { display: flex; }
+    .help-content { width: min(460px, 100%); padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: #101a2b; }
+    .help-content h2 { margin: 0 0 10px; font-size: 15px; }
+    .help-content p { color: #a7b7c9; font-size: 11px; line-height: 1.6; }
+    .help-close { float: right; border: 0; background: transparent; color: #9fb0c4; font-size: 20px; cursor: pointer; }
+    .log-details summary { display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer; }
+    .log-details summary::-webkit-details-marker { display: none; }
+    .log-details[open] .log { max-height: 130px; }
+    @keyframes beacon-pulse { 0% { opacity: .9; transform: scale(.65) translateZ(-5px); } 100% { opacity: 0; transform: scale(1.7) translateZ(-5px); } }
+    @keyframes radar-pulse { 0% { opacity: .95; transform: scale(.65) translateZ(12px); } 100% { opacity: 0; transform: scale(1.55) translateZ(12px); } }
+    @keyframes lidar-flash { 0% { box-shadow: 0 0 0 rgba(56, 189, 248, 0); } 35% { box-shadow: 0 0 21px rgba(56, 189, 248, .95); border-color: #bae6fd; } 100% { box-shadow: 0 0 0 rgba(56, 189, 248, 0); } }
+    @keyframes data-flow { 0% { background: #38bdf8; box-shadow: 0 0 0 #38bdf8; } 70% { background: #f59e0b; box-shadow: 0 0 9px #f59e0b; } 100% { background: #38bdf8; box-shadow: 0 0 0 #38bdf8; } }
+    /* Mini robot: CSS 3D voxel robot that walks the A* route */
+    .mini-bot { position: absolute; left: 0; top: 0; z-index: 30; pointer-events: none; transform-style: preserve-3d; transition: left .6s cubic-bezier(.45, 0, .25, 1), top .6s cubic-bezier(.45, 0, .25, 1); }
+    .mini-bot.no-anim, .mini-bot.no-anim .bot-rig { transition: none; }
+    .mini-bot-shadow {
+      position: absolute; left: 50%; top: 50%; width: 7em; height: 7em; margin: -3.5em 0 0 -3.5em; border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, .55), rgba(56, 189, 248, 0) 68%); transform: translateZ(25px);
+    }
+    .bot-rig { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(25px) rotateZ(var(--heading, 0deg)); transition: transform .35s ease; }
+    .bot-anim, .bot-head, .bot-leg { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
+    .bx { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
+    .bx > i { position: absolute; left: 0; top: 0; display: block; background: var(--c); border-radius: .22em; }
+    .bx > .tp { width: calc(var(--w) * 1em); height: calc(var(--d) * 1em); margin: calc(var(--d) * -.5em) 0 0 calc(var(--w) * -.5em); transform: translateZ(calc(var(--h) * 1em)); box-shadow: inset 0 0 0 99em rgba(255, 255, 255, .14); }
+    .bx > .ft, .bx > .bk { width: calc(var(--w) * 1em); height: calc(var(--h) * 1em); margin: calc(var(--h) * -.5em) 0 0 calc(var(--w) * -.5em); }
+    .bx > .ft { transform: translateY(calc(var(--d) * .5em)) translateZ(calc(var(--h) * .5em)) rotateX(-90deg); }
+    .bx > .bk { transform: translateY(calc(var(--d) * -.5em)) translateZ(calc(var(--h) * .5em)) rotateX(90deg); box-shadow: inset 0 0 0 99em rgba(0, 0, 0, .34); }
+    .bx > .lt, .bx > .rt { width: calc(var(--h) * 1em); height: calc(var(--d) * 1em); margin: calc(var(--d) * -.5em) 0 0 calc(var(--h) * -.5em); box-shadow: inset 0 0 0 99em rgba(0, 0, 0, .2); }
+    .bx > .rt { transform: translateX(calc(var(--w) * .5em)) translateZ(calc(var(--h) * .5em)) rotateY(90deg); }
+    .bx > .lt { transform: translateX(calc(var(--w) * -.5em)) translateZ(calc(var(--h) * .5em)) rotateY(-90deg); box-shadow: inset 0 0 0 99em rgba(0, 0, 0, .28); }
+    .bot-visor { position: absolute; inset: 20% 11% 24%; display: flex; align-items: center; justify-content: center; gap: .75em; border-radius: .6em; background: #0b1726; }
+    .bot-eye { width: .7em; height: .85em; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 .5em #38bdf8; animation: bot-blink 4s infinite; transition: background .2s, box-shadow .2s; }
+    .bot-bulb > i { box-shadow: 0 0 .7em #f59e0b; animation: bot-antenna 1.4s ease-in-out infinite; }
+    .bot-anim { animation: bot3-idle 2.4s ease-in-out infinite; }
+    .mini-bot.walking .bot-anim { animation: bot3-walk .3s ease-in-out infinite; }
+    .mini-bot.walking .bot-leg-l { animation: bot3-step .3s ease-in-out infinite; }
+    .mini-bot.walking .bot-leg-r { animation: bot3-step .3s ease-in-out -.15s infinite; }
+    .mini-bot.waiting .bot-head { animation: bot3-look 1s ease-in-out; }
+    .mini-bot.waiting .bot-eye { background: #f59e0b; box-shadow: 0 0 .5em #f59e0b; }
+    .mini-bot.bumped .bot-anim { animation: bot3-bump .45s ease-in-out 2; }
+    .mini-bot.bumped .bot-eye { background: #ef4444; box-shadow: 0 0 .6em #ef4444; }
+    .mini-bot.done:not(.walking) .bot-anim { animation: bot3-cheer 1.4s ease-in-out infinite; }
+    .mini-bot.done .bot-eye { background: #10b981; box-shadow: 0 0 .6em #10b981; }
+    .mini-bot.spawn .bot-anim { animation: bot3-spawn .5s cubic-bezier(.3, 1.5, .5, 1); }
+    .cell.current .icon:empty { display: none; }
+    @keyframes bot3-idle { 0%, 100% { transform: translateZ(0); } 50% { transform: translateZ(.35em); } }
+    @keyframes bot3-walk { 0%, 100% { transform: translateZ(0) rotateY(-5deg); } 50% { transform: translateZ(.7em) rotateY(5deg); } }
+    @keyframes bot3-step { 0%, 100% { transform: translateZ(0); } 50% { transform: translateZ(.8em); } }
+    @keyframes bot3-look { 0%, 100% { transform: rotateZ(0); } 30% { transform: rotateZ(35deg); } 70% { transform: rotateZ(-35deg); } }
+    @keyframes bot3-bump { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-1em) rotateX(-12deg); } }
+    @keyframes bot3-cheer { 0% { transform: translateZ(0) rotateZ(0); } 50% { transform: translateZ(2em) rotateZ(180deg); } 100% { transform: translateZ(0) rotateZ(360deg); } }
+    @keyframes bot3-spawn { from { transform: translateZ(6em) scale3d(.01, .01, .01); } to { transform: translateZ(0) scale3d(1, 1, 1); } }
+    @keyframes bot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+    @keyframes bot-antenna { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+    @media (max-width: 1050px) {
+      .dashboard { grid-template-columns: minmax(0, 1.2fr) minmax(340px, 1fr); }
+      .shell { padding-top: 11px; padding-bottom: 10px; }
+      .intro { margin-bottom: 9px; }
+      .board-frame { min-height: 250px; }
+      .board { width: min(72%, 290px); }
+    }
+    @media (max-width: 780px) {
+      .shell { padding: 13px; }
+      .dashboard { grid-template-columns: 1fr; }
+      .mission-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side { grid-template-columns: 1fr; }
+      .board-frame { min-height: 340px; }
+      .board { width: min(65%, 350px); }
+      .side { gap: 9px; }
+      .engine-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .engine-card { min-height: 100px; }
+      .engine-result, .engine-detail { margin-left: 0; }
+      .engine-heading p { display: block; }
+      .pipeline-title { margin-top: 3px; }
+      .pipeline-block + .pipeline-block { margin-top: 9px; }
+      .pipeline-block + .pipeline-block::before { display: none; }
+    }
+    @media (max-width: 560px) {
+      .shell { padding: 10px; }
+      .topbar { align-items: flex-start; margin-bottom: 10px; }
+      .top-tags { max-width: 150px; }
+      .topbar-actions { align-items: flex-end; flex-direction: column-reverse; gap: 5px; }
+      .tag { padding: 5px 7px; font-size: 8px; }
+      .help-button { min-height: 27px; padding: 5px 7px; font-size: 8px; }
+      .mission-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .board-frame { min-height: 270px; }
+      .board { width: min(76%, 290px); gap: 5px; }
+      .map-toolbar { padding-inline: 9px; }
+      .view-button, .xray-button { font-size: 8px; }
+      .map-wrap { padding: 7px 8px 10px; }
+      .map-footer { padding-inline: 8px; }
+      .engine-grid { grid-template-columns: 1fr; }
+      .engine-card { min-height: 0; }
+      .engine-result, .engine-detail { margin-left: 26px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">⌁</div>
+        <div><p class="brand-title">CAMPUS AI</p><p class="brand-subtitle">Autonomous delivery lab</p></div>
+      </div>
+      <div class="topbar-actions">
+        <div class="top-tags"><span class="tag live">● СИМУЛЯЦИЯ</span><span class="tag">AI FUNDAMENTALS · FINAL PROJECT</span></div>
+        <button class="help-button" id="helpBtn" aria-haspopup="dialog">[? Справка по защите]</button>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div class="eyebrow">Интерактивная демонстрация</div>
+      <h1>Робот-доставщик кампуса</h1>
+      <p>Проверь датчик, оцени риск и помоги роботу доставить посылку. Решения принимаются тремя методами ИИ: поиск A*, Байесовский вывод и MDP.</p>
+    </section>
+
+    <section class="dashboard" aria-label="Панель автопилота">
+      <div class="main-column">
+        <section class="mission-strip" aria-label="Телеметрия миссии">
+          <div class="mission-tile"><div class="mission-label"><i></i>Миссия</div><strong class="mission-value">CR-07 · доставка</strong><span class="mission-note">АВТОНОМНЫЙ РЕЖИМ</span></div>
+          <div class="mission-tile"><div class="mission-label"><i></i>Груз · BX-204</div><strong class="mission-value">Лаб. материалы</strong><span class="mission-note">Доставить в корпус D</span></div>
+          <div class="mission-tile"><div class="mission-label"><i></i>Цель · корпус D</div><strong class="mission-value">Координата 5.5</strong><span class="mission-note">Северный кампус</span></div>
+          <div class="mission-tile"><div class="mission-label"><i></i>Энергия <b id="batteryValue">100%</b></div><div class="energy-line"><div class="energy-fill" id="batteryFill"></div></div><span class="mission-note">Расход батареи симуляции</span></div>
+        </section>
+        <div class="map-telemetry">
+          <div class="map-telemetry-item"><span>ПРОЙДЕНО</span><strong id="distanceStat">0 / 8</strong></div>
+          <div class="map-telemetry-item"><span>ОЧКИ МИССИИ</span><strong id="scoreStat">0</strong></div>
+          <div class="map-telemetry-item"><span>ОЖИДАНИЯ</span><strong id="waitStat">0</strong></div>
+          <div class="map-telemetry-item"><span>ХОД</span><strong id="turnNumber">1</strong></div>
+        </div>
+        <article class="panel map-panel" id="mapPanel">
+          <header class="panel-head"><h2 class="panel-title">FSD · Карта окружения</h2><span class="panel-kicker">5 × 5 GRID · <b id="deliveryStatus">ПОСЫЛКА В ПУТИ</b></span></header>
+          <div class="map-toolbar">
+            <div class="map-toolbar-group"><button class="view-button" id="viewToggle" aria-pressed="false">3D FSD Вид</button><button class="xray-button" id="xrayToggle" aria-pressed="false">X-Ray: A* цены</button><button class="view-button" id="autoBtn" aria-pressed="false" title="Робот сам проверяет датчик и выполняет рекомендацию MDP">▶ Автопилот</button></div>
+            <span class="panel-kicker" id="mapCoordinates">КООРДИНАТЫ 1.1 → 5.5</span>
+          </div>
+          <div class="map-wrap">
+            <div class="map-meta"><span>КАМПУС · СЕВЕРНЫЙ КВАРТАЛ</span><span>ЛИДАР <strong>АКТИВЕН</strong></span></div>
+            <div class="board-frame"><div class="board" id="board" role="img" aria-label="Карта из 5 на 5 клеток">
+              <div class="mini-bot" id="miniBot" aria-hidden="true"></div>
+            </div></div>
+            <div class="legend">
+              <span><i class="dot"></i> AVATAR</span><span><i class="dot path-dot"></i> A* ROUTE</span><span><i class="dot wall-dot"></i> BUILDING</span><span><i class="dot goal-dot"></i> DESTINATION</span>
+            </div>
+          </div>
+        </article>
+        <div class="howto"><strong>Как показать алгоритмы:</strong> нажми «Сигнал: тревога» — Байес повысит вероятность препятствия, и агент выберет ожидание. Затем начни заново и нажми «Сигнал: чисто» — вероятность снизится, рекомендация изменится на движение. Кнопка «Проверить датчик» генерирует случайное показание. Выполняй рекомендации, чтобы пройти маршрут.</div>
+      </div>
+
+      <aside class="side">
+        <div class="pipeline-title"><h2>AI CORE / МОЗГ АГЕНТА</h2><span>3 МОДУЛЯ · ONLINE</span></div>
+        <div class="pipeline-block" id="sensorBlock">
+        <section class="panel status-card">
+          <div class="status-row"><div class="status-name">Состояние коридора</div><span class="status-chip" id="sensorChip">НЕ ПРОВЕРЕН</span></div>
+          <p class="status-text" id="statusText">Нажми «Проверить датчик», чтобы получить сигнал перед следующим шагом.</p>
+          <div class="risk-head"><span>Вероятность препятствия</span><strong id="riskValue">15%</strong></div>
+          <div class="meter" role="progressbar" aria-label="Вероятность препятствия" aria-valuemin="0" aria-valuemax="100" aria-valuenow="15"><div class="meter-fill" id="riskFill"></div></div>
+          <div class="prob-caption"><span>Коридор свободен</span><span>Заблокирован</span></div>
+          <button class="btn scan-btn primary" id="scanBtn">◉ &nbsp; Проверить датчик</button>
+          <div class="signal-buttons">
+            <button class="btn alert-btn" id="alertBtn" title="Использовать сигнал тревоги в учебном примере">⚠ Сигнал: тревога</button>
+            <button class="btn" id="clearBtn" title="Использовать сигнал «чисто» в учебном примере">✓ Сигнал: чисто</button>
+          </div>
+        </section>
+        </div>
+
+        <div class="pipeline-block" id="mdpBlock">
+        <section class="panel algo-card" id="mdpCard">
+          <div class="algo-title"><h2>Решение MDP</h2><span>Bellman · 1 шаг</span></div>
+          <div class="q-row"><span>Ехать</span><div class="q-track"><div class="q-fill" id="moveBar"></div></div><strong class="q-value" id="moveValue">—</strong></div>
+          <div class="q-row"><span>Ждать</span><div class="q-track"><div class="q-fill wait" id="waitBar"></div></div><strong class="q-value" id="waitValue">—</strong></div>
+          <div class="recommend"><span>Рекомендация агента</span><strong id="recommendation">Сначала сканируй</strong></div>
+          <button class="btn apply-btn" id="applyBtn" disabled>Выполнить рекомендацию →</button>
+        </section>
+        </div>
+
+        <div class="pipeline-block" id="engineBlock">
+        <section class="engine-section" aria-label="Работа алгоритмов">
+          <div class="engine-heading"><div><h2>ВНУТРИ AI-АГЕНТА</h2><p>Связанные алгоритмы одной миссии</p></div><span class="live-state">● LIVE · ХОД <b id="engineTurn">1</b></span></div>
+          <div class="engine-grid">
+            <article class="engine-card">
+              <div class="engine-top"><div class="engine-name"><span class="engine-icon">⌁</span>A* · планировщик пути</div><span class="engine-status" id="routeEngineStatus">ПОИСК</span></div>
+              <div class="engine-result" id="routeEngineResult">8 шагов до цели</div>
+              <div class="engine-detail">Манхэттенская эвристика · <strong id="routeEngineDetail">точка 1 из 9</strong><br>Кратчайший путь обходит 2 здания.</div>
+            </article>
+            <article class="engine-card bayes-card">
+              <div class="engine-top"><div class="engine-name"><span class="engine-icon">◉</span>Bayes · оценка датчика</div><span class="engine-status" id="bayesEngineStatus">ОЖИДАНИЕ</span></div>
+              <div class="engine-result" id="bayesEngineResult">Риск: 15%</div>
+              <div class="engine-detail" id="bayesEngineDetail">Prior 15% · сигнал ещё не получен<br>Модель датчика: 85% точность тревоги.</div>
+            </article>
+            <article class="engine-card mdp-card">
+              <div class="engine-top"><div class="engine-name"><span class="engine-icon">⇄</span>MDP · выбор действия</div><span class="engine-status">BELLMAN · 1 ШАГ</span></div>
+              <div class="engine-result" id="mdpEngineResult">Ожидает наблюдение</div>
+              <div class="engine-detail" id="mdpEngineDetail">Сравнивает ожидаемую ценность действий<br>«Ехать» и «Ждать».</div>
+            </article>
+          </div>
+        </section>
+        </div>
+
+        <details class="panel log-card log-details" id="logDetails">
+          <summary class="log-head"><h2>Журнал миссии</h2><span class="log-actions"><span id="logCount">0 событий</span><button class="text-btn" id="resetBtn" type="button">Сброс ↻</button><span class="disclosure">⌄</span></span></summary>
+          <div class="log" id="log" aria-live="polite"></div>
+        </details>
+      </aside>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="help-modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <section class="help-content"><button class="help-close" id="helpClose" aria-label="Закрыть справку">×</button><h2 id="helpTitle">Справка по защите</h2><p>Нажми «Сигнал: тревога»: Байес обновит вероятность препятствия, после чего MDP сравнит «Ехать» и «Ждать». Затем сбрось миссию и выбери «Сигнал: чисто», чтобы показать второй сценарий. Кнопка датчика генерирует случайное показание.</p><p><strong>A*</strong> строит кратчайший маршрут по клеткам. <strong>Bayes</strong> оценивает риск препятствия по сигналу датчика. <strong>MDP</strong> выбирает действие с большей ожидаемой ценностью по одному обновлению Беллмана.</p><p>Допущения учебные: карта 5×5, две стены, заданные вероятности датчика и таблицы переходов/наград.</p></section>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+      const SIZE = 5;
+      const START = [0, 0];
+      const GOAL = [4, 4];
+      const WALLS = new Set(["1,1", "2,1"]);
+      const SENSOR = { alertBlocked: 0.85, alertClear: 0.25 };
+      const TRANSITION = {
+        Move: { clear: 0.10, blocked: 0.80 },
+        Wait: { clear: 0.05, blocked: 0.40 }
+      };
+      const REWARD = {
+        Move: { clear: 10, blocked: -20 },
+        Wait: { clear: -2, blocked: 1 }
+      };
+      const STATE_VALUE = { clear: 5, blocked: -10 };
+      const GAMMA = 0.9;
+      const $ = (id) => document.getElementById(id);
+
+      function key(cell) { return `${cell[0]},${cell[1]}`; }
+      function heuristic(a, b) { return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]); }
+      function getNeighbors([r, c]) {
+        return [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]
+          .filter(([y, x]) => y >= 0 && y < SIZE && x >= 0 && x < SIZE && !WALLS.has(key([y, x])));
+      }
+
+      function aStar(start, goal) {
+        const open = [{ cell: start, f: heuristic(start, goal), g: 0 }];
+        const cameFrom = new Map();
+        const bestCost = new Map([[key(start), 0]]);
+        const exploredCells = [];
+        let expanded = 0;
+        while (open.length) {
+          open.sort((a, b) => a.f - b.f || a.g - b.g);
+          const current = open.shift();
+          expanded++;
+          exploredCells.push(key(current.cell));
+          if (key(current.cell) === key(goal)) {
+            const route = [current.cell];
+            let cursor = key(current.cell);
+            while (cameFrom.has(cursor)) {
+              const previous = cameFrom.get(cursor);
+              route.unshift(previous);
+              cursor = key(previous);
+            }
+            return { route, expanded, exploredCells };
+          }
+          for (const next of getNeighbors(current.cell)) {
+            const nextKey = key(next);
+            const candidateCost = current.g + 1;
+            if (candidateCost < (bestCost.get(nextKey) ?? Infinity)) {
+              bestCost.set(nextKey, candidateCost);
+              cameFrom.set(nextKey, current.cell);
+              open.push({ cell: next, g: candidateCost, f: candidateCost + heuristic(next, goal) });
+            }
+          }
+        }
+        throw new Error("Маршрут не найден");
+      }
+
+      function shortestDistances(start) {
+        const distances = new Map([[key(start), 0]]);
+        const queue = [start];
+        for (let index = 0; index < queue.length; index++) {
+          const current = queue[index];
+          for (const next of getNeighbors(current)) {
+            const nextKey = key(next);
+            if (!distances.has(nextKey)) {
+              distances.set(nextKey, distances.get(key(current)) + 1);
+              queue.push(next);
+            }
+          }
+        }
+        return distances;
+      }
+
+      function bayes(priorBlocked, alert) {
+        const likelihoodBlocked = alert ? SENSOR.alertBlocked : 1 - SENSOR.alertBlocked;
+        const likelihoodClear = alert ? SENSOR.alertClear : 1 - SENSOR.alertClear;
+        const evidence = likelihoodBlocked * priorBlocked + likelihoodClear * (1 - priorBlocked);
+        const posterior = likelihoodBlocked * priorBlocked / evidence;
+        return { evidence, posterior, clear: 1 - posterior, likelihoodBlocked, likelihoodClear };
+      }
+
+      function actionValues(pBlocked) {
+        const p = { clear: 1 - pBlocked, blocked: pBlocked };
+        const values = {};
+        for (const action of ["Move", "Wait"]) {
+          values[action] = 0;
+          for (const state of ["clear", "blocked"]) {
+            const pNextBlocked = TRANSITION[action][state];
+            const nextValue = (1 - pNextBlocked) * STATE_VALUE.clear + pNextBlocked * STATE_VALUE.blocked;
+            values[action] += p[state] * (REWARD[action][state] + GAMMA * nextValue);
+          }
+        }
+        return values;
+      }
+
+      const planned = aStar(START, GOAL);
+      const route = planned.route;
+      const exploredCells = planned.exploredCells;
+      const distancesFromStart = shortestDistances(START);
+      let robotIndex = 0;
+      let belief = 0.15;
+      let lastPrior = 0.15;
+      let battery = 100;
+      let actualBlocked = Math.random() < belief;
+      let hasReading = false;
+      let lastAlert = null;
+      let score = 0;
+      let waits = 0;
+      let turn = 1;
+      let finished = false;
+      let isXray = false;
+      let isTopView = false;
+      let lidarRun = 0;
+      let toastTimer;
+      const bot = $("miniBot");
+      let botIndex = null;
+      let botMoodTimer;
+      let botTurnTimer;
+      let botHeading = 0;
+      let autopilotTimer = null;
+
+      function makeDiv(className) {
+        const node = document.createElement("div");
+        node.className = className;
+        return node;
+      }
+
+      // A cuboid made of five CSS faces; sizes and offsets are in em (1 cell = 10em).
+      function makeBox(className, [w, d, h], [x, y, z], color) {
+        const box = makeDiv(`bx ${className}`.trim());
+        box.style.cssText = `--w:${w};--d:${d};--h:${h};--c:${color};transform:translate3d(${x}em,${y}em,${z}em)`;
+        for (const side of ["tp", "ft", "bk", "lt", "rt"]) {
+          const face = document.createElement("i");
+          face.className = side;
+          box.append(face);
+        }
+        return box;
+      }
+
+      function buildBot() {
+        const rig = makeDiv("bot-rig");
+        const body = makeDiv("bot-anim");
+        const head = makeDiv("bot-head");
+        const legLeft = makeDiv("bot-leg bot-leg-l");
+        const legRight = makeDiv("bot-leg bot-leg-r");
+        const parcel = "linear-gradient(90deg, #d97706 40%, #fde68a 40% 60%, #d97706 60%)";
+        legLeft.append(makeBox("", [1.3, 1.7, 1.6], [-1.05, 0, 0], "#475569"));
+        legRight.append(makeBox("", [1.3, 1.7, 1.6], [1.05, 0, 0], "#475569"));
+        const skull = makeBox("", [3.4, 2.8, 2.6], [0, 0, 4.7], "#e7eef8");
+        skull.querySelector(".ft").innerHTML = '<b class="bot-visor"><b class="bot-eye"></b><b class="bot-eye"></b></b>';
+        head.append(
+          skull,
+          makeBox("", [0.3, 0.3, 1], [0, 0, 7.3], "#7dd3fc"),
+          makeBox("bot-bulb", [0.8, 0.8, 0.8], [0, 0, 8.3], "#f59e0b")
+        );
+        body.append(
+          legLeft,
+          legRight,
+          makeBox("", [3.6, 2.6, 3.1], [0, 0, 1.6], "#cbd5e1"),
+          makeBox("", [0.6, 1, 2.2], [-2.1, 0, 2.2], "#94a3b8"),
+          makeBox("", [0.6, 1, 2.2], [2.1, 0, 2.2], "#94a3b8"),
+          makeBox("", [2.8, 1.3, 2.4], [0, -1.95, 2], parcel),
+          head
+        );
+        rig.append(body);
+        bot.append(makeDiv("mini-bot-shadow"), rig);
+      }
+
+      // Direction of route segment index -> index + 1, as rotation around the vertical axis.
+      function headingFor(index) {
+        const from = Math.max(0, Math.min(index, route.length - 2));
+        const dr = route[from + 1][0] - route[from][0];
+        const dc = route[from + 1][1] - route[from][1];
+        return dr === 1 ? 0 : dr === -1 ? 180 : dc === 1 ? -90 : 90;
+      }
+
+      function turnBot(target) {
+        botHeading += ((target - botHeading) % 360 + 540) % 360 - 180;
+        bot.querySelector(".bot-rig").style.setProperty("--heading", `${botHeading}deg`);
+      }
+
+      function setBotMood(mood, duration) {
+        bot.classList.remove("walking", "waiting", "bumped");
+        void bot.offsetWidth;
+        bot.classList.add(mood);
+        clearTimeout(botMoodTimer);
+        botMoodTimer = setTimeout(() => bot.classList.remove(mood), duration);
+      }
+
+      function placeBot(instant) {
+        const tile = $("board").querySelector(`.cell[data-cell="${key(route[robotIndex])}"]`);
+        if (!tile) return;
+        const moved = botIndex !== null && botIndex !== robotIndex;
+        if (instant) bot.classList.add("no-anim");
+        bot.style.left = `${tile.offsetLeft}px`;
+        bot.style.top = `${tile.offsetTop}px`;
+        bot.style.width = `${tile.offsetWidth}px`;
+        bot.style.height = `${tile.offsetHeight}px`;
+        bot.style.fontSize = `${tile.offsetWidth / 10}px`;
+        clearTimeout(botTurnTimer);
+        if (moved && !instant) {
+          turnBot(headingFor(robotIndex - 1));
+          botTurnTimer = setTimeout(() => turnBot(headingFor(robotIndex)), 620);
+        } else {
+          turnBot(headingFor(robotIndex));
+        }
+        if (instant) {
+          void bot.offsetWidth;
+          bot.classList.remove("no-anim");
+        }
+        if (moved && !instant) setBotMood("walking", 650);
+        botIndex = robotIndex;
+        bot.classList.toggle("done", finished);
+      }
+
+      function setAutopilot(on) {
+        clearInterval(autopilotTimer);
+        autopilotTimer = on ? setInterval(autopilotStep, 1000) : null;
+        $("autoBtn").setAttribute("aria-pressed", String(on));
+        $("autoBtn").textContent = on ? "■ Стоп" : "▶ Автопилот";
+      }
+
+      function autopilotStep() {
+        if (finished) { setAutopilot(false); return; }
+        if (!hasReading) $("scanBtn").click();
+        else executeAction();
+      }
+
+      function runLidarScan() {
+        const currentRun = ++lidarRun;
+        exploredCells.forEach((cellKey, index) => {
+          window.setTimeout(() => {
+            if (currentRun !== lidarRun) return;
+            const tile = [...$("board").children].find((item) => item.dataset.cell === cellKey);
+            if (!tile) return;
+            tile.classList.remove("explored");
+            void tile.offsetWidth;
+            tile.classList.add("explored");
+          }, index * 36);
+        });
+      }
+
+      function drawBoard() {
+        const board = $("board");
+        board.querySelectorAll(".cell").forEach((cell) => cell.remove());
+        const visited = new Set(route.slice(0, robotIndex + 1).map(key));
+        const path = new Set(route.map(key));
+        const nextCell = route[Math.min(robotIndex + 1, route.length - 1)];
+        const nextCellKey = key(nextCell);
+        for (let r = 0; r < SIZE; r++) {
+          for (let c = 0; c < SIZE; c++) {
+            const cell = [r, c];
+            const cellKey = key(cell);
+            const tile = document.createElement("div");
+            tile.className = "cell";
+            tile.dataset.cell = cellKey;
+            tile.setAttribute("aria-label", `Клетка ${r + 1}, ${c + 1}`);
+            if (path.has(cellKey)) {
+              tile.classList.add("route");
+              const routeIndex = route.findIndex((point) => key(point) === cellKey);
+              const destination = route[Math.min(routeIndex + 1, route.length - 1)];
+              const delta = [destination[0] - r, destination[1] - c];
+              const angle = delta[0] === 1 ? 90 : delta[0] === -1 ? -90 : delta[1] === -1 ? 180 : 0;
+              tile.style.setProperty("--route-angle", `${angle}deg`);
+            }
+            if (visited.has(cellKey)) tile.classList.add("visited");
+            if (cellKey === nextCellKey && !finished) {
+              tile.classList.add("next-scan");
+              tile.dataset.signal = hasReading ? (lastAlert ? "alert" : "clear") : "pending";
+            }
+            if (isXray && !WALLS.has(cellKey)) {
+              tile.classList.add("xray-cell");
+              const g = distancesFromStart.get(cellKey);
+              const h = heuristic(cell, GOAL);
+              tile.dataset.xray = `f${g + h}\ng${g} h${h}`;
+            }
+            if (WALLS.has(cellKey)) {
+              tile.className = "cell wall";
+              tile.innerHTML = `<span class="icon">▥</span><span class="coords">${r + 1}.${c + 1}</span>`;
+            } else if (cellKey === key(GOAL)) {
+              tile.className = `cell goal${robotIndex === route.length - 1 ? " current" : ""}`;
+              tile.innerHTML = `<span class="icon">${robotIndex === route.length - 1 ? "" : "⌖"}</span><span class="coords">ЦЕЛЬ</span>`;
+            } else if (cellKey === key(route[robotIndex])) {
+              tile.classList.add("current");
+              tile.innerHTML = `<span class="icon"></span><span class="coords">AV</span>`;
+            } else {
+              tile.innerHTML = `<span class="icon">${path.has(cellKey) ? "·" : ""}</span><span class="coords">${r + 1}.${c + 1}</span>`;
+            }
+            if (cellKey === nextCellKey && !finished) {
+              const badge = document.createElement("span");
+              badge.className = "scan-label";
+              badge.textContent = hasReading
+                ? (lastAlert ? `⚠ RISK ${(belief * 100).toFixed(1)}%` : "✓ CLEAR")
+                : `P(obs): ${(belief * 100).toFixed(1)}%`;
+              tile.append(badge);
+            }
+            if (isXray && !WALLS.has(cellKey)) {
+              const xray = document.createElement("span");
+              xray.className = "xray-info";
+              xray.textContent = tile.dataset.xray;
+              tile.append(xray);
+            }
+            board.append(tile);
+          }
+        }
+        board.classList.toggle("top-view", isTopView);
+        placeBot(botIndex === null);
+      }
+
+      function setRisk(probability) {
+        const percent = Math.round(probability * 100);
+        $("riskValue").textContent = `${percent}%`;
+        $("riskFill").style.width = `${percent}%`;
+        $("riskFill").parentElement.setAttribute("aria-valuenow", String(percent));
+      }
+
+      function updateMDP() {
+        const values = actionValues(belief);
+        const maxMagnitude = Math.max(12, Math.abs(values.Move), Math.abs(values.Wait));
+        $("moveValue").textContent = values.Move.toFixed(2);
+        $("waitValue").textContent = values.Wait.toFixed(2);
+        $("moveBar").style.width = `${Math.max(4, Math.min(100, (values.Move + maxMagnitude) / (2 * maxMagnitude) * 100))}%`;
+        $("waitBar").style.width = `${Math.max(4, Math.min(100, (values.Wait + maxMagnitude) / (2 * maxMagnitude) * 100))}%`;
+        const recommendation = values.Move >= values.Wait ? "Move" : "Wait";
+        $("recommendation").textContent = recommendation === "Move" ? "Ехать" : "Ждать";
+        $("recommendation").dataset.action = recommendation;
+        $("mdpCard").classList.toggle("recommend-wait", recommendation === "Wait");
+        $("recommendation").parentElement.classList.toggle("wait-state", recommendation === "Wait");
+        $("applyBtn").classList.toggle("action-wait", recommendation === "Wait");
+        $("applyBtn").classList.toggle("action-move", recommendation === "Move");
+        $("applyBtn").textContent = recommendation === "Wait"
+          ? "Выполнить рекомендацию · Ждать"
+          : "Выполнить рекомендацию · Ехать";
+        $("applyBtn").disabled = !hasReading || finished;
+        return values;
+      }
+
+      function addLog(message) {
+        const row = document.createElement("div");
+        row.className = "log-entry";
+        const time = new Date();
+        row.innerHTML = `<time>${time.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time><span>${message}</span>`;
+        $("log").prepend(row);
+        const eventCount = $("log").children.length;
+        $("logCount").textContent = `${eventCount} ${eventCount === 1 ? "событие" : "событий"}`;
+      }
+
+      function showToast(message) {
+        const toast = $("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
+      }
+
+      function updateDisplay() {
+        drawBoard();
+        setRisk(belief);
+        $("turnNumber").textContent = String(turn);
+        $("engineTurn").textContent = String(turn);
+        const robotCell = route[robotIndex];
+        $("mapCoordinates").textContent = `AV ${robotCell[0] + 1}.${robotCell[1] + 1} → D 5.5`;
+        $("distanceStat").textContent = `${robotIndex} / ${route.length - 1}`;
+        $("scoreStat").textContent = String(score);
+        $("waitStat").textContent = String(waits);
+        $("batteryValue").textContent = `${battery}%`;
+        $("batteryFill").style.width = `${battery}%`;
+        $("batteryFill").style.background = battery < 25
+          ? "linear-gradient(90deg, #ff5968, #ff8994)"
+          : "linear-gradient(90deg, #4da8ff, #7a8fff)";
+        const remaining = route.length - 1 - robotIndex;
+        $("routeEngineResult").textContent = finished ? "Доставка выполнена!" : `${remaining} ${remaining === 1 ? "шаг" : "шагов"} до цели`;
+        $("routeEngineDetail").textContent = `точка ${robotIndex + 1} из ${route.length}`;
+        $("routeEngineStatus").textContent = finished ? "ГОТОВО" : "ПОИСК";
+        $("bayesEngineResult").textContent = `Риск: ${(belief * 100).toFixed(1)}%`;
+        $("bayesEngineStatus").textContent = hasReading ? "ОБНОВЛЕНО" : "ОЖИДАНИЕ";
+        $("bayesEngineDetail").innerHTML = hasReading
+          ? `Prior ${(lastPrior * 100).toFixed(1)}% → Posterior ${(belief * 100).toFixed(1)}%<br>Наблюдение: ${lastAlert ? "тревога" : "коридор чист"}.`
+          : `Текущий prior ${(belief * 100).toFixed(1)}% · датчик ожидает<br>Срабатывание тревоги: 85%.`;
+        $("deliveryStatus").textContent = finished ? "Посылка: доставлена ✓" : "Посылка: в пути";
+        const values = updateMDP();
+        $("mdpEngineResult").textContent = hasReading
+          ? `Совет агента: ${values.Move >= values.Wait ? "Ехать" : "Ждать"}`
+          : finished ? "Миссия завершена" : "Нужен сигнал датчика";
+        $("mdpEngineDetail").innerHTML = hasReading
+          ? `Ехать <strong>${values.Move.toFixed(2)}</strong> · Ждать <strong>${values.Wait.toFixed(2)}</strong><br>Выбрано действие с большей ценностью.`
+          : `Состояния: свободно / заблокировано<br>Награды и переходы заданы для симуляции.`;
+        $("sensorChip").textContent = finished ? "МИССИЯ ГОТОВА" : hasReading ? (lastAlert ? "⚠ ТРЕВОГА" : "✓ ЧИСТО") : "НЕ ПРОВЕРЕН";
+        $("sensorChip").classList.toggle("warn", hasReading && lastAlert);
+        if (finished) {
+          $("statusText").textContent = `Доставка завершена! Робот набрал ${score} очков за ${turn - 1} ходов.`;
+        } else if (!hasReading) {
+          $("statusText").textContent = `Следующая точка маршрута: (${route[robotIndex + 1][0] + 1}, ${route[robotIndex + 1][1] + 1}). Проверь датчик или выбери учебный сигнал.`;
+        } else {
+          $("statusText").textContent = `Сигнал: ${lastAlert ? "тревога" : "коридор выглядит безопасным"}. Байес обновил оценку; выбери действие с большим значением.`;
+        }
+        if (finished) $("mapPanel").classList.add("finished");
+        return values;
+      }
+
+      function observe(alert, source) {
+        if (finished) return;
+        const prior = belief;
+        const result = bayes(prior, alert);
+        lastPrior = prior;
+        lastPrior = prior;
+        belief = result.posterior;
+        hasReading = true;
+        lastAlert = alert;
+        const signal = alert ? "тревога" : "чисто";
+        $("sensorChip").textContent = alert ? "⚠ ТРЕВОГА" : "✓ ЧИСТО";
+        $("sensorChip").classList.toggle("warn", alert);
+        $("statusText").textContent = `${source}: ${alert ? "датчик заметил препятствие" : "датчик не заметил препятствие"}. P(сигнал) = ${(result.evidence * 100).toFixed(1)}%.`;
+        const values = updateMDP();
+        const recommended = values.Move >= values.Wait ? "ехать" : "ждать";
+        addLog(`<b>Байес:</b> сигнал «${signal}», риск изменился с ${(prior * 100).toFixed(1)}% до ${(belief * 100).toFixed(1)}%.`);
+        addLog(`<b>MDP:</b> Move ${values.Move.toFixed(2)} против Wait ${values.Wait.toFixed(2)} — рекомендовано ${recommended}.`);
+        $("sensorBlock").classList.remove("data-pulse");
+        $("mdpBlock").classList.remove("data-pulse");
+        void $("sensorBlock").offsetWidth;
+        $("sensorBlock").classList.add("data-pulse");
+        $("mdpBlock").classList.add("data-pulse");
+        window.setTimeout(() => $("sensorBlock").classList.remove("data-pulse"), 650);
+        window.setTimeout(() => $("mdpBlock").classList.remove("data-pulse"), 650);
+        updateDisplay();
+        runLidarScan();
+        showToast(`P(препятствие | сигнал) = ${(belief * 100).toFixed(1)}% · агент советует ${recommended}.`);
+      }
+
+      function executeAction() {
+        if (!hasReading || finished) return;
+        const action = $("recommendation").dataset.action;
+        const currentState = actualBlocked ? "blocked" : "clear";
+        const reward = REWARD[action][currentState];
+        battery = Math.max(0, battery - (action === "Move" ? 6 : 2));
+        score += reward;
+        turn++;
+        if (action === "Wait") {
+          waits++;
+          setBotMood("waiting", 1000);
+          addLog(`<b>Ход ${turn - 1}:</b> робот ждёт. Награда ${reward > 0 ? "+" : ""}${reward}.`);
+          showToast(`Робот подождал. Счёт: ${reward > 0 ? "+" : ""}${reward}.`);
+        } else if (currentState === "clear") {
+          robotIndex++;
+          addLog(`<b>Ход ${turn - 1}:</b> коридор свободен — робот продвинулся. Награда +${reward}.`);
+          showToast("Путь свободен — робот едет дальше! +10 очков.");
+        } else {
+          setBotMood("bumped", 900);
+          addLog(`<b>Ход ${turn - 1}:</b> препятствие оказалось реальным — робот остановился. Награда ${reward}.`);
+          showToast("Препятствие! Робот остановился и попробует снова.");
+        }
+
+        if (robotIndex >= route.length - 1) {
+          finished = true;
+          hasReading = false;
+          addLog(`<b>Миссия:</b> посылка доставлена. Итоговый счёт: ${score}.`);
+          updateDisplay();
+          return;
+        }
+
+        const pNextBlocked = TRANSITION[action][currentState];
+        belief = (1 - belief) * TRANSITION[action].clear + belief * TRANSITION[action].blocked;
+        lastPrior = belief;
+        actualBlocked = Math.random() < pNextBlocked;
+        hasReading = false;
+        lastAlert = null;
+        $("sensorChip").textContent = "НЕ ПРОВЕРЕН";
+        $("applyBtn").disabled = true;
+        updateDisplay();
+      }
+
+      function resetGame() {
+        setAutopilot(false);
+        robotIndex = 0;
+        botIndex = null;
+        bot.classList.remove("spawn", "walking", "waiting", "bumped", "done");
+        void bot.offsetWidth;
+        bot.classList.add("spawn");
+        setTimeout(() => bot.classList.remove("spawn"), 550);
+        belief = 0.15;
+        lastPrior = 0.15;
+        battery = 100;
+        actualBlocked = Math.random() < belief;
+        hasReading = false;
+        lastAlert = null;
+        score = 0;
+        waits = 0;
+        turn = 1;
+        finished = false;
+        $("log").replaceChildren();
+        $("logCount").textContent = "0 событий";
+        $("mapPanel").classList.remove("finished");
+        addLog(`<b>A*:</b> найден маршрут длиной ${route.length - 1} шагов; исследовано ${planned.expanded} состояний.`);
+        addLog("<b>Миссия:</b> робот получил посылку. Проверь коридор перед движением.");
+        updateDisplay();
+        runLidarScan();
+        showToast("Новая миссия началась. Посылка загружена.");
+      }
+
+      $("scanBtn").addEventListener("click", () => {
+        const alert = actualBlocked ? Math.random() < SENSOR.alertBlocked : Math.random() < SENSOR.alertClear;
+        observe(alert, "Сканирование");
+      });
+      $("alertBtn").addEventListener("click", () => observe(true, "Учебный сигнал"));
+      $("clearBtn").addEventListener("click", () => observe(false, "Учебный сигнал"));
+      buildBot();
+      $("applyBtn").addEventListener("click", executeAction);
+      $("autoBtn").addEventListener("click", () => {
+        if (autopilotTimer) { setAutopilot(false); return; }
+        if (finished) resetGame();
+        setAutopilot(true);
+        autopilotStep();
+      });
+      if ("ResizeObserver" in window) new ResizeObserver(() => placeBot(true)).observe($("board"));
+      $("resetBtn").addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        resetGame();
+      });
+      $("viewToggle").addEventListener("click", () => {
+        isTopView = !isTopView;
+        $("viewToggle").textContent = isTopView ? "2D Сверху" : "3D FSD Вид";
+        $("viewToggle").setAttribute("aria-pressed", String(isTopView));
+        $("board").classList.toggle("top-view", isTopView);
+      });
+      $("xrayToggle").addEventListener("click", () => {
+        isXray = !isXray;
+        $("xrayToggle").setAttribute("aria-pressed", String(isXray));
+        drawBoard();
+        if (isXray) runLidarScan();
+      });
+      $("helpBtn").addEventListener("click", () => $("helpModal").classList.add("open"));
+      $("helpClose").addEventListener("click", () => $("helpModal").classList.remove("open"));
+      $("helpModal").addEventListener("click", (event) => {
+        if (event.target === $("helpModal")) $("helpModal").classList.remove("open");
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() === "r" && !event.repeat) resetGame();
+        if (event.key === "Enter" && hasReading && !finished) executeAction();
+        if (event.key === "Escape") $("helpModal").classList.remove("open");
+      });
+
+      resetGame();
+    })();
+  </script>
+</body>
+</html>
