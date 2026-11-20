@@ -114,6 +114,14 @@ deliveries, and the destination is a parcel on a pallet.
 Keys: `Enter` follows the advice, `R` restarts, `N` makes a new map, `Esc`
 closes the explanation.
 
+## Deploy to Vercel
+
+The website is static: no build step, no server code. `vercel.json` serves
+`game.html` at the site root and `.vercelignore` leaves the Python code and
+tests out of the deployment. In Vercel choose **Add New → Project**, import this
+GitHub repository, keep **Framework Preset: Other** with empty build and output
+settings, and press **Deploy**. Every push to `main` redeploys the site.
+
 ## Run the Python version
 
 Requires Python 3.10 or later; no third-party packages are needed.
