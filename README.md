@@ -86,28 +86,32 @@ trained or production controller.
 ## Interactive game website
 
 Open `game.html` in a browser. The page is self-contained and needs no install,
-server, or internet connection. It presents the project as a playable campus
-delivery simulation in a compact two-column autopilot HUD: an isometric campus
-map and telemetry on the left, and the linked sensor/Bayes/MDP decision
-pipeline on the right.
+server, or internet connection. It presents the task as a calm warehouse
+simulation: shelving racks are the walls, a 3D forklift robot carries out the
+deliveries, and the destination is a parcel on a pallet.
 
-Use the **Signal: alert** and **Signal: clear** buttons for repeatable
-presentation examples; **Check sensor** generates a noisy simulated reading.
-The map uses A* to find the shortest path around walls. The **3D FSD view** and
-**2D top view** buttons switch the map projection; **X-Ray: A* costs** overlays
-per-cell `f/g/h` values, and the lidar scan animates A*'s expanded cells.
-A small CSS-3D robot carrying the parcel walks the A* route cell by cell,
-turns to face its next move, looks around on `Wait`, recoils when the corridor
-turns out to be blocked, and celebrates at the destination. **▶ Автопилот**
-lets the robot repeat "check sensor → execute the MDP recommendation" on its
-own until the parcel is delivered. After
-a sensor reading, the next route cell displays a radar badge with the posterior
-risk or clear status. A mission header shows the parcel, destination and
-simulated battery; live algorithm cards expose route progress, Bayesian
-prior/posterior and Bellman action values. The mission score, turn counter,
-risk estimate, and event log update as the robot plays. Open **Defense help**
-for a short presentation guide. Press `R` or click **Reset** to restart; `Enter`
-executes the recommendation after a sensor reading.
+- **Map.** A* plans the route around the racks; arrows on the floor show it.
+  After a new start the cells A* expanded are highlighted in order, and
+  **f / g / h** labels every cell with its A* values. **Вид сверху** switches
+  between the isometric and the top view.
+- **Sensor and decision.** **Проверить датчик** gives a noisy reading;
+  **Пример: тревога / чисто** give repeatable readings for a presentation. The
+  panel shows the risk before and after Bayes' rule, both Bellman Q-values and
+  the advice relative to the 30% threshold; **Выполнить совет** carries it out
+  and **▶ Автопилот** repeats "check sensor → follow the advice" until delivery.
+- **Robot.** The forklift drives cell by cell, turns at corners, looks around
+  when it waits and backs off when the corridor is blocked. At the goal it lifts
+  the parcel onto its forks and does a somersault.
+- **Random maps.** **🎲 Новая карта** (key `N`) places 2–6 racks at random while
+  start and goal stay fixed; a breadth-first search rejects any layout without
+  a path to the parcel. **Карта из задания** restores the assignment's map
+  (5×5, 2 walls), which is the one all numbers in this README refer to.
+- **Explanations.** Every **!** button opens a professor robot that explains
+  the task, A*, Bayes' rule and the MDP with worked formulas, the numbers of the
+  current map and the current turn, plus a how-to-play tab.
+
+Keys: `Enter` follows the advice, `R` restarts, `N` makes a new map, `Esc`
+closes the explanation.
 
 ## Run the Python version
 
@@ -138,7 +142,7 @@ matplotlib; everything else uses only the standard library).
 | `experiment.py` | Monte Carlo comparison of decision policies and sensor-noise sweep |
 | `tests/` | Unit tests for `main.py` and `experiment.py` |
 | `results/` | Generated tables and charts used in the report |
-| `game.html` | Interactive browser demo with the 3D robot and autopilot |
+| `game.html` | Interactive warehouse demo: 3D forklift, random maps, explanations |
 | `REPORT.md` | Technical report |
 
 ## Results
