@@ -87,7 +87,8 @@ trained or production controller.
 
 Open `game.html` in a browser. The page is self-contained and needs no install,
 server, or internet connection. It presents the task as a calm warehouse
-simulation: shelving racks are the walls, a 3D forklift robot carries out the
+simulation: the map stands in a warehouse hall with a window and wall shelving,
+shelving racks on the map are the walls, a 3D forklift robot carries out the
 deliveries, and the destination is a parcel on a pallet.
 
 - **Map.** A* plans the route around the racks; arrows on the floor show it.
@@ -101,7 +102,7 @@ deliveries, and the destination is a parcel on a pallet.
   and **▶ Автопилот** repeats "check sensor → follow the advice" until delivery.
 - **Robot.** The forklift drives cell by cell, turns at corners, looks around
   when it waits and backs off when the corridor is blocked. At the goal it lifts
-  the parcel onto its forks and does a somersault.
+  the parcel onto its forks and spins around on the spot.
 - **Random maps.** **🎲 Новая карта** (key `N`) places 2–6 racks at random while
   start and goal stay fixed; a breadth-first search rejects any layout without
   a path to the parcel. **Карта из задания** restores the assignment's map
