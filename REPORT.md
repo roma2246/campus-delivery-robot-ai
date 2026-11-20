@@ -37,7 +37,7 @@ A* route ──► next corridor ──► noisy sensor ──► Bayes posterio
 | Algorithms and CLI demo | `main.py` |
 | Simulation study | `experiment.py` → `results/` |
 | Unit tests (33) | `tests/` |
-| Interactive demo (3D robot, autopilot) | `game.html` |
+| Interactive warehouse demo (3D forklift, random maps, explanations) | `game.html` |
 
 ## 5. Algorithms
 
@@ -110,10 +110,14 @@ whenever the corridor is more than 30% likely to be blocked.
   same formulas in JavaScript for the interactive demo, and both report the
   same numbers (route of 8 moves, 9 expanded states, 37.5% risk after an
   alert, Q(Move) = −1.64, Q(Wait) = 1.18).
-- The browser demo shows the A\* route and expanded cells (lidar scan and
-  X-Ray f/g/h overlay), the Bayes prior → posterior, the two Q-values, and a
-  3D robot that executes the recommendation; **Autopilot** runs the whole
-  sense → decide → act loop until delivery.
+- The browser demo is a warehouse: racks are walls, a 3D forklift robot
+  follows the A\* route (expanded cells highlighted, optional f/g/h labels),
+  the panel shows the Bayes prior → posterior and the two Q-values, and
+  **Autopilot** runs the whole sense → decide → act loop until the robot
+  lifts the parcel. A **new map** button places 2–6 racks at random and keeps
+  only layouts where a path exists (checked with BFS), showing that A\* is not
+  tied to one hand-made map; the assignment's 2-wall map is one click away.
+  The **!** buttons open worked explanations of each algorithm.
 
 ## 7. Testing
 `python3 -m unittest discover -s tests -v` runs **33 tests, all passing**:
