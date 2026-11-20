@@ -1,0 +1,7 @@
+# The website is the single static page game.html; Python code, tests and
+# working folders are not needed on Vercel.
+*.py
+tests/
+handoff/
+assets/
+__pycache__/
