@@ -111,9 +111,10 @@ deliveries, and the destination is a parcel on a pallet.
   the task, A*, Bayes' rule and the MDP with worked formulas, the numbers of the
   current map and the current turn, plus a how-to-play tab.
 
-- **Day and night.** **🌙 Ночь / ☀️ День** (key `T`) switches the theme. At
-  night the sun sets behind the city outside the window, the moon and stars
-  come out, windows in the buildings light up, the hall goes dark and only the
+- **Day and night.** The ☀️ / 🌙 pill switch (key `T`) changes the theme. The
+  sun and the moon ride on one arc outside the window, like a real day: the sun
+  sets behind the city on one side while the moon rises on the other, stars come
+  out, windows in the buildings light up, the hall goes dark and only the
   ceiling lamps and the forklift's headlights light it. The choice is
   remembered; on the first visit the page follows the system theme.
 
