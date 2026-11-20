@@ -111,8 +111,14 @@ deliveries, and the destination is a parcel on a pallet.
   the task, A*, Bayes' rule and the MDP with worked formulas, the numbers of the
   current map and the current turn, plus a how-to-play tab.
 
-Keys: `Enter` follows the advice, `R` restarts, `N` makes a new map, `Esc`
-closes the explanation.
+- **Day and night.** **🌙 Ночь / ☀️ День** (key `T`) switches the theme. At
+  night the sun sets behind the city outside the window, the moon and stars
+  come out, windows in the buildings light up, the hall goes dark and only the
+  ceiling lamps and the forklift's headlights light it. The choice is
+  remembered; on the first visit the page follows the system theme.
+
+Keys: `Enter` follows the advice, `R` restarts, `N` makes a new map, `T`
+switches day/night, `Esc` closes the explanation.
 
 ## Deploy to Vercel
 

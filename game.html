@@ -4,6 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Робот-погрузчик на складе</title>
+  <script>
+    (function () {
+      var theme = "light";
+      try {
+        var saved = localStorage.getItem("warehouse-theme");
+        theme = saved === "dark" || saved === "light" ? saved
+          : (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      } catch (e) {}
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <style>
     :root {
       --bg: #f3f1ec;
@@ -24,10 +35,66 @@
       --route: #d3e8e1;
       --visited: #a9d3c6;
       --radius: 14px;
+      --line-soft: #f0ede6;
+      --line-strong: #d4cfc4;
+      --surface-2: #faf9f6;
+      --surface-3: #f1efe9;
+      --surface-hover: #f6f4ef;
+      --chip: #ffffff;
+      --text-body: #3b4442;
+      --info-line: #cfe3dc;
+      --info-hover: #cfe8df;
+      --pressed-line: #bcdcd2;
+      --amber-line: #efd3a8;
+      --wall-tile: #cbc6bb;
+      --goal-tile: #f0e3bd;
+      --frame-bg: #e9e4da;
+      --prof-bg: #f4f8f6;
+      --q-bar: #8fb7ad;
+      --track: #eeebe4;
+      --overlay: rgba(38, 48, 47, .35);
+      color-scheme: light;
+    }
+    /* Night theme: same roles, darker steps. */
+    :root[data-theme="dark"] {
+      --bg: #14181c;
+      --panel: #1d2328;
+      --ink: #e6ebe8;
+      --muted: #a1aaa6;
+      --faint: #7a837f;
+      --line: #2f373d;
+      --accent: #3f9a86;
+      --accent-ink: #8fd6c4;
+      --accent-soft: #1f3a33;
+      --amber: #e3a24c;
+      --amber-soft: #3b2c18;
+      --floor: #3a3e42;
+      --tile: #4a4e52;
+      --route: #2c564c;
+      --visited: #3b7466;
+      --line-soft: #283036;
+      --line-strong: #3a434a;
+      --surface-2: #22292e;
+      --surface-3: #283036;
+      --surface-hover: #262d33;
+      --chip: #252c31;
+      --text-body: #cdd4d1;
+      --info-line: #2f5249;
+      --info-hover: #2a4a42;
+      --pressed-line: #36605a;
+      --amber-line: #5a4424;
+      --wall-tile: #3d4145;
+      --goal-tile: #5a4b25;
+      --frame-bg: #12161b;
+      --prof-bg: #1a2125;
+      --q-bar: #3f6d63;
+      --track: #2c3439;
+      --overlay: rgba(0, 0, 0, .55);
+      color-scheme: dark;
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0; background: var(--bg); color: var(--ink);
+      margin: 0; background: var(--bg); color: var(--ink); transition: background .8s, color .8s;
       font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     }
     button { font: inherit; color: inherit; cursor: pointer; }
@@ -38,6 +105,7 @@
     .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
     .top h1 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.01em; }
     .top p { margin: 4px 0 0; color: var(--muted); }
+    .top-actions { display: flex; align-items: center; gap: 8px; flex: none; }
     .layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); gap: 16px; align-items: start; }
     .side { display: grid; gap: 12px; }
 
@@ -47,16 +115,16 @@
     .step { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); font-size: 12px; font-weight: 700; }
     .info {
       display: inline-grid; place-items: center; width: 28px; height: 28px; flex: none;
-      border: 1px solid #cfe3dc; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink);
+      border: 1px solid var(--info-line); border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink);
       font-weight: 800; font-size: 15px; transition: background .2s, transform .2s;
     }
-    .info:hover { background: #cfe8df; transform: scale(1.06); }
+    .info:hover { background: var(--info-hover); transform: scale(1.06); }
     .muted { color: var(--muted); }
     .small { font-size: 13px; }
 
     .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 8px 12px; font-size: 14px; font-weight: 550; transition: background .15s, border-color .15s; }
-    .btn:hover:not(:disabled) { background: #f6f4ef; border-color: #d4cfc4; }
-    .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: #bcdcd2; color: var(--accent-ink); }
+    .btn:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--line-strong); }
+    .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--pressed-line); color: var(--accent-ink); }
     .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     .btn-primary:hover:not(:disabled) { background: var(--accent-ink); border-color: var(--accent-ink); }
     .btn-wide { width: 100%; padding: 11px 14px; }
@@ -67,7 +135,7 @@
     .map-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
     .frame {
       position: relative; display: grid; place-items: center; min-height: 520px; overflow: hidden;
-      padding: 130px 0 26px; border-radius: 12px; background: #e9e4da;
+      padding: 130px 0 26px; border-radius: 12px; background: var(--frame-bg);
     }
     /* Warehouse room behind the map: walls, window, shelving, lamps. */
     .room { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -94,17 +162,17 @@
     .cell.route .arrow { display: block; }
     .cell.visited { background: var(--visited); }
     .cell.visited .arrow { opacity: .35; }
-    .cell.wall { background: #cbc6bb; }
-    .cell.goal { background: #f0e3bd; box-shadow: inset 0 0 0 2px rgba(201, 161, 58, .55); }
+    .cell.wall { background: var(--wall-tile); }
+    .cell.goal { background: var(--goal-tile); box-shadow: inset 0 0 0 2px rgba(201, 161, 58, .55); }
     .cell.goal .arrow { display: none; }
     .cell.next::after { content: ""; position: absolute; inset: 3px; border: 2px dashed var(--accent); border-radius: 5px; pointer-events: none; }
     .cell.next[data-signal="alert"]::after { border-color: var(--amber); }
     .chip {
       position: absolute; left: 50%; top: 3px; z-index: 3; transform: translateX(-50%);
-      padding: 0 6px; border: 1px solid var(--line); border-radius: 99px; background: #fff;
+      padding: 0 6px; border: 1px solid var(--line); border-radius: 99px; background: var(--chip);
       font-size: 9px; font-weight: 650; white-space: nowrap; color: var(--accent-ink);
     }
-    .cell.next[data-signal="alert"] .chip { background: var(--amber-soft); border-color: #efd3a8; color: var(--amber); }
+    .cell.next[data-signal="alert"] .chip { background: var(--amber-soft); border-color: var(--amber-line); color: var(--amber); }
     .xray { display: none; position: absolute; left: 4px; top: 2px; font: 8.5px/1.15 ui-monospace, monospace; color: var(--accent-ink); white-space: pre; text-align: left; }
     .board.show-xray .cell:not(.wall) .xray { display: block; }
     .board.show-xray .cell .chip { top: auto; bottom: 12px; }
@@ -124,6 +192,52 @@
     .bx > .rt { transform: translateX(calc(var(--w) * .5em)) translateZ(calc(var(--h) * .5em)) rotateY(90deg); }
     .bx > .lt { transform: translateX(calc(var(--w) * -.5em)) translateZ(calc(var(--h) * .5em)) rotateY(-90deg); box-shadow: inset 0 0 0 99em rgba(0, 0, 0, .24); }
     .label-face { position: absolute; inset: 22% 26%; border-radius: .2em; background: #f7f1e3; box-shadow: inset 0 -.25em 0 rgba(0, 0, 0, .12); }
+
+    /* At night the 3D models are lit only by the lamps; eyes and headlights stay bright. */
+    .board .bx > i { transition: filter 1.6s ease; }
+    :root[data-theme="dark"] .board .bx > i:not(.lit) { filter: brightness(.68) saturate(.9); }
+    .bot-beam {
+      position: absolute; left: 0; top: 0; width: 10em; height: 13em; margin-left: -5em;
+      background: radial-gradient(ellipse 50% 70% at 50% 0%, rgba(255, 233, 160, .6), rgba(255, 233, 160, 0) 72%);
+      transform: translateY(4.4em) translateZ(.15em); opacity: 0; transition: opacity 1.2s ease .8s; pointer-events: none;
+    }
+    :root[data-theme="dark"] .bot-beam { opacity: 1; }
+    .lamp-light {
+      position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity 2s ease .8s;
+      background:
+        radial-gradient(ellipse 26% 34% at 34% 58%, rgba(255, 222, 150, .2), rgba(255, 222, 150, 0) 70%),
+        radial-gradient(ellipse 26% 34% at 66% 58%, rgba(255, 222, 150, .2), rgba(255, 222, 150, 0) 70%);
+      mix-blend-mode: screen;
+    }
+    :root[data-theme="dark"] .lamp-light { opacity: 1; }
+
+    /* Room: day → night. Sun sets behind the city, moon rises, windows light up. */
+    .room .sky-night, .room .night-shade, .room .beam-day, .room .beam-night, .room .lamp-cone,
+    .room .lamp-pool, .room .stars, .room .city-light, .room .clouds, .room .glare { transition: opacity 2.4s ease; }
+    .room .city, .room .hills, .room .mullion { transition: fill 2.4s ease; }
+    .room .sky-night, .room .night-shade, .room .beam-night, .room .lamp-cone, .room .lamp-pool, .room .stars, .room .city-light { opacity: 0; }
+    .room .sun { transition: transform 2.2s ease-out 1.3s, opacity 2.2s ease-out 1.3s; }
+    .room .moon { transform: translateY(120px); opacity: 0; transition: transform 2s ease-in, opacity 2s ease-in; }
+    .room .dusk { opacity: 0; }
+    .room.sky-shift .dusk { animation: dusk 3.6s ease-in-out; }
+    @keyframes dusk { 0% { opacity: 0; } 40% { opacity: .85; } 100% { opacity: 0; } }
+    .room .star { animation: twinkle 3s ease-in-out infinite; }
+    @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+    :root[data-theme="dark"] .room .sun { transform: translateY(120px); opacity: 0; transition: transform 2.2s ease-in, opacity 2.2s ease-in; }
+    :root[data-theme="dark"] .room .moon { transform: none; opacity: 1; transition: transform 2.4s ease-out 1.5s, opacity 2.4s ease-out 1.5s; }
+    :root[data-theme="dark"] .room .sky-night { opacity: 1; transition-delay: .6s; }
+    :root[data-theme="dark"] .room .night-shade { opacity: .7; transition-delay: .5s; }
+    :root[data-theme="dark"] .room .beam-day { opacity: 0; }
+    :root[data-theme="dark"] .room .beam-night { opacity: 1; transition-delay: 1.5s; }
+    :root[data-theme="dark"] .room .lamp-cone, :root[data-theme="dark"] .room .lamp-pool { opacity: 1; transition-delay: 1s; }
+    :root[data-theme="dark"] .room .stars { opacity: 1; transition-delay: 2s; }
+    :root[data-theme="dark"] .room .city-light { opacity: 1; }
+    :root[data-theme="dark"] .room .clouds { opacity: .12; }
+    :root[data-theme="dark"] .room .glare { opacity: .3; }
+    :root[data-theme="dark"] .room .city { fill: #1b283c; }
+    :root[data-theme="dark"] .room .hills { fill: #1c3126; }
+    :root[data-theme="dark"] .room .mullion { fill: #2a3137; }
+    :root:not([data-theme="dark"]) .room .city-light { transition-delay: 0s !important; transition-duration: .8s; }
 
     .floor-crate { transition: opacity .2s; }
     .board.picked .floor-crate { opacity: 0; }
@@ -165,60 +279,60 @@
     @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
 
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
-    .stat { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #faf9f6; }
+    .stat { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
     .stat span { display: block; font-size: 12px; color: var(--muted); }
     .stat strong { font-size: 17px; font-variant-numeric: tabular-nums; }
 
     /* ---------- Side panel ---------- */
-    .fact { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #f0ede6; font-size: 14px; }
+    .fact { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
     .fact:first-of-type { border-top: 0; }
     .fact b { font-variant-numeric: tabular-nums; }
     .risk { margin: 6px 0 12px; }
     .risk-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; }
     .risk-top strong { font-size: 22px; font-variant-numeric: tabular-nums; }
-    .bar { position: relative; height: 10px; margin-top: 6px; border-radius: 99px; background: #eeebe4; overflow: hidden; }
+    .bar { position: relative; height: 10px; margin-top: 6px; border-radius: 99px; background: var(--track); overflow: hidden; }
     .bar > i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 99px; background: var(--accent); transition: width .5s ease, background .3s; }
     .bar.warn > i { background: var(--amber); }
     .bar .mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); opacity: .55; }
     .row { display: flex; gap: 8px; flex-wrap: wrap; }
     .row .btn { flex: 1; }
-    .signal { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 650; background: #f0ede6; color: var(--muted); }
+    .signal { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 650; background: var(--surface-3); color: var(--muted); }
     .signal.alert { background: var(--amber-soft); color: var(--amber); }
     .signal.clear { background: var(--accent-soft); color: var(--accent-ink); }
     .q { display: grid; grid-template-columns: 64px 1fr 56px; align-items: center; gap: 8px; margin: 6px 0; font-size: 14px; }
     .q b { text-align: right; font-variant-numeric: tabular-nums; }
-    .q .bar > i { background: #8fb7ad; }
+    .q .bar > i { background: var(--q-bar); }
     .q.best .bar > i { background: var(--accent); }
     .q.best span { font-weight: 650; }
-    .advice { margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: #f7f5f0; font-size: 14px; }
+    .advice { margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 14px; }
     .advice strong { color: var(--accent-ink); }
     .advice.wait strong { color: var(--amber); }
     details.log { font-size: 13px; }
     details.log summary { cursor: pointer; color: var(--muted); }
     .log-list { max-height: 180px; overflow: auto; margin-top: 8px; display: grid; gap: 4px; }
-    .log-list div { padding: 4px 8px; border-radius: 6px; background: #faf9f6; }
+    .log-list div { padding: 4px 8px; border-radius: 6px; background: var(--surface-2); }
     .log-list time { color: var(--faint); margin-right: 6px; font-variant-numeric: tabular-nums; }
 
     .toast {
       position: fixed; left: 50%; bottom: 18px; z-index: 50; max-width: calc(100% - 32px);
       transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
-      padding: 9px 14px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 14px;
+      padding: 9px 14px; border-radius: 10px; background: var(--ink); color: var(--bg); font-size: 14px;
       transition: opacity .25s, transform .25s;
     }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
     /* ---------- Explanation dialog with the professor robot ---------- */
-    .modal { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; padding: 16px; background: rgba(38, 48, 47, .35); }
+    .modal { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; padding: 16px; background: var(--overlay); }
     .modal.open { display: grid; }
     .sheet {
       display: grid; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
       width: min(940px, 100%); height: min(720px, calc(100vh - 32px)); height: min(720px, calc(100dvh - 32px));
       overflow: hidden; border-radius: 18px; background: var(--panel); box-shadow: 0 24px 60px rgba(30, 30, 20, .25);
     }
-    .prof { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 16px; background: #f4f8f6; border-right: 1px solid var(--line); }
+    .prof { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 16px; background: var(--prof-bg); border-right: 1px solid var(--line); }
     .prof svg { width: 150px; height: auto; }
-    .bubble { position: relative; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
-    .bubble::before { content: ""; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; margin-left: -6px; background: #fff; border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); }
+    .bubble { position: relative; padding: 10px 12px; border-radius: 12px; background: var(--chip); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+    .bubble::before { content: ""; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; margin-left: -6px; background: var(--chip); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); }
     .prof-eyes { animation: prof-blink 5s infinite; transform-origin: 75px 80px; }
     @keyframes prof-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
     .prof-pointer { animation: prof-point 3s ease-in-out infinite; transform-origin: 112px 132px; }
@@ -226,22 +340,22 @@
     .sheet-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
     .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px 0; }
     .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tab { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 5px 12px; font-size: 13px; }
+    .tab { border: 1px solid var(--line); background: var(--chip); border-radius: 99px; padding: 5px 12px; font-size: 13px; }
     .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
     .close { border: 0; background: transparent; font-size: 22px; line-height: 1; color: var(--muted); padding: 4px 8px; border-radius: 8px; }
-    .close:hover { background: #f1efe9; }
+    .close:hover { background: var(--surface-3); }
     .explain { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 22px 22px; }
     .explain h3 { margin: 14px 0 6px; font-size: 20px; }
     .explain h4 { margin: 16px 0 6px; font-size: 15px; }
-    .explain p, .explain li { color: #3b4442; }
+    .explain p, .explain li { color: var(--text-body); }
     .explain ul, .explain ol { padding-left: 20px; margin: 6px 0; }
-    .explain .formula { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: #f6f4ef; font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-x: auto; }
+    .explain .formula { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-3); font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-x: auto; }
     .explain table { border-collapse: collapse; margin: 8px 0; font-size: 14px; }
     .explain th, .explain td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: right; }
     .explain th:first-child, .explain td:first-child { text-align: left; }
     .explain .now { margin: 12px 0; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; background: var(--accent-soft); }
     .pipeline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0; }
-    .pipeline span { padding: 4px 10px; border-radius: 99px; background: #f1efe9; font-size: 13px; }
+    .pipeline span { padding: 4px 10px; border-radius: 99px; background: var(--surface-3); font-size: 13px; }
     .pipeline i { color: var(--faint); font-style: normal; }
 
     @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
@@ -266,7 +380,10 @@
         <h1>Робот-погрузчик на складе</h1>
         <p>Довези посылку до цели: A* прокладывает маршрут, Байес оценивает риск, MDP выбирает действие.</p>
       </div>
-      <button class="info" data-topic="task" aria-label="Объяснение: задача и как играть" title="Задача и как играть">!</button>
+      <div class="top-actions">
+        <button class="btn" id="themeBtn" aria-pressed="false" title="Клавиша T">🌙 Ночь</button>
+        <button class="info" data-topic="task" aria-label="Объяснение: задача и как играть" title="Задача и как играть">!</button>
+      </div>
     </header>
 
     <main class="layout">
@@ -290,11 +407,18 @@
           <svg class="room" viewBox="0 0 900 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
           <defs>
   <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ee"/><stop offset="1" stop-color="#e3f3fb"/></linearGradient>
+  <linearGradient id="skyNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1630"/><stop offset="1" stop-color="#2a3d63"/></linearGradient>
+  <linearGradient id="skyDusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d5a9a"/><stop offset=".55" stop-color="#e98a6a"/><stop offset="1" stop-color="#f7c27a"/></linearGradient>
   <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbea" stop-opacity=".55"/><stop offset="1" stop-color="#fffbea" stop-opacity="0"/></linearGradient>
+  <linearGradient id="beamNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9cdf2" stop-opacity=".28"/><stop offset="1" stop-color="#b9cdf2" stop-opacity="0"/></linearGradient>
+  <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a0" stop-opacity=".5"/><stop offset="1" stop-color="#ffe3a0" stop-opacity="0"/></linearGradient>
   <linearGradient id="floorShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cbc5b9"/><stop offset="1" stop-color="#ddd8ce"/></linearGradient>
   <radialGradient id="lampGlow"><stop offset="0" stop-color="#fff6d8" stop-opacity=".9"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient>
+  <radialGradient id="pool"><stop offset="0" stop-color="#ffdd99" stop-opacity=".5"/><stop offset="1" stop-color="#ffdd99" stop-opacity="0"/></radialGradient>
   <radialGradient id="sun"><stop offset="0" stop-color="#fffbe6"/><stop offset=".45" stop-color="#fff2c2" stop-opacity=".9"/><stop offset="1" stop-color="#fff2c2" stop-opacity="0"/></radialGradient>
+  <radialGradient id="moonGlow"><stop offset="0" stop-color="#e8eefc" stop-opacity=".55"/><stop offset="1" stop-color="#e8eefc" stop-opacity="0"/></radialGradient>
   <pattern id="hazard" width="16" height="8" patternUnits="userSpaceOnUse" patternTransform="skewX(-45)"><rect width="16" height="8" fill="#d9b443"/><rect width="8" height="8" fill="#4b4f52"/></pattern>
+  <clipPath id="glass"><rect x="150" y="66" width="270" height="150"/></clipPath>
 </defs>
           <polygon points="0.0,0.0 900.0,0.0 780.0,40.0 120.0,40.0" fill="#d9d3c7"/>
           <line x1="150" y1="40" x2="-30" y2="0" stroke="#cbc4b6" stroke-width="3"/>
@@ -348,21 +472,6 @@
           <line x1="710" y1="230" x2="2042" y2="640" stroke="#c6c0b3" stroke-width="1.5"/>
           <line x1="780" y1="230" x2="2471" y2="640" stroke="#c6c0b3" stroke-width="1.5"/>
           <rect x="120" y="222" width="660" height="8" fill="url(#hazard)" opacity=".75"/>
-          <polygon points="156.0,230.0 414.0,230.0 490.0,380.0 100.0,380.0" fill="url(#beam)"/>
-          <rect x="144" y="60" width="282" height="162" rx="4" fill="#59646d"/>
-          <rect x="150" y="66" width="270" height="150" fill="url(#sky)"/>
-          <circle cx="365" cy="104" r="34" fill="url(#sun)"/>
-          <ellipse cx="210" cy="100" rx="26" ry="11.7" fill="#ffffff" opacity=".9"/>
-          <ellipse cx="232" cy="94" rx="20" ry="9.0" fill="#ffffff" opacity=".9"/>
-          <ellipse cx="290" cy="118" rx="22" ry="9.9" fill="#ffffff" opacity=".9"/>
-          <ellipse cx="308" cy="113" rx="15" ry="6.8" fill="#ffffff" opacity=".9"/>
-          <polygon points="150,216 150,190 168,190 168,202 184,202 184,186 202,186 202,208 216,208 216,194 238,194 238,182 260,182 260,198 274,198 274,206 290,206 290,188 316,188 316,200 336,200 336,180 356,180 356,196 376,196 376,186 398,186 398,204 412,204 412,192 420,192 420,216" fill="#a9bccb"/>
-          <path d="M150 216 q 60 -24 130 -6 t 140 -10 v 16 z" fill="#9cc29a"/>
-          <polygon points="170.0,66.0 210.0,66.0 160.0,216.0 120.0,216.0" fill="#ffffff" opacity=".18"/>
-          <rect x="237.0" y="66" width="6" height="150" fill="#59646d"/>
-          <rect x="327.0" y="66" width="6" height="150" fill="#59646d"/>
-          <rect x="150" y="138.0" width="270" height="6" fill="#59646d"/>
-          <rect x="136" y="222" width="298" height="9" rx="2" fill="#cfc7b8"/>
           <rect x="466" y="80" width="8" height="150" fill="#5b7385"/>
           <rect x="606" y="80" width="8" height="150" fill="#5b7385"/>
           <rect x="746" y="80" width="8" height="150" fill="#5b7385"/>
@@ -419,15 +528,6 @@
           <polygon points="70.0,202.1 104.0,187.8 104.0,214.1 70.0,236.9" fill="#c99a5b"/>
           <polygon points="806.0,130.5 856.0,140.1 856.0,293.3 806.0,251.7" fill="#7d8a8f"/>
           <polygon points="812.0,143.0 850.0,152.5 850.0,288.3 812.0,256.7" fill="#93a0a5"/>
-          <polygon points="814.0,106.8 848.0,108.9 848.0,127.8 814.0,122.8" fill="#2f9a5f"/>
-          <line x1="300" y1="0" x2="300" y2="30" stroke="#6d6a63" stroke-width="2"/>
-          <ellipse cx="300" cy="70" rx="90" ry="46" fill="url(#lampGlow)"/>
-          <polygon points="278.0,46.0 322.0,46.0 312.0,30.0 288.0,30.0" fill="#4b5254"/>
-          <ellipse cx="300" cy="46" rx="20" ry="4" fill="#fff6d8"/>
-          <line x1="600" y1="0" x2="600" y2="30" stroke="#6d6a63" stroke-width="2"/>
-          <ellipse cx="600" cy="70" rx="90" ry="46" fill="url(#lampGlow)"/>
-          <polygon points="578.0,46.0 622.0,46.0 612.0,30.0 588.0,30.0" fill="#4b5254"/>
-          <ellipse cx="600" cy="46" rx="20" ry="4" fill="#fff6d8"/>
           <rect x="18" y="585" width="120" height="14" rx="2" fill="#b98d5a"/>
           <rect x="26" y="599" width="14" height="8" fill="#9c744a"/><rect x="71" y="599" width="14" height="8" fill="#9c744a"/><rect x="116" y="599" width="14" height="8" fill="#9c744a"/>
           <rect x="22" y="541" width="54" height="44" fill="#c99a5b"/>
@@ -442,8 +542,101 @@
           <rect x="790" y="550" width="6" height="40" fill="#e8d3a3" opacity=".7"/>
           <rect x="822" y="538" width="54" height="52" fill="#c99a5b"/>
           <rect x="846" y="538" width="6" height="52" fill="#e8d3a3" opacity=".7"/>
+          <rect x="144" y="60" width="282" height="162" rx="4" fill="#59646d"/>
+          <rect x="136" y="222" width="298" height="9" rx="2" fill="#cfc7b8"/>
+          <rect class="night-shade" x="0" y="0" width="900" height="640" fill="#0a1220"/>
+          <g clip-path="url(#glass)">
+          <rect x="150" y="66" width="270" height="150" fill="url(#sky)"/>
+          <rect class="sky-night" x="150" y="66" width="270" height="150" fill="url(#skyNight)"/>
+          <rect class="dusk" x="150" y="66" width="270" height="150" fill="url(#skyDusk)"/>
+          <g class="stars">
+          <circle class="star" cx="239.5" cy="83.2" r="1.4" fill="#ffffff" style="animation-delay:0.2s"/>
+          <circle class="star" cx="294.3" cy="99.1" r="0.9" fill="#ffffff" style="animation-delay:1.5s"/>
+          <circle class="star" cx="165.7" cy="104.1" r="0.9" fill="#ffffff" style="animation-delay:0.3s"/>
+          <circle class="star" cx="265.5" cy="133.2" r="0.9" fill="#ffffff" style="animation-delay:0.7s"/>
+          <circle class="star" cx="317.9" cy="142.1" r="1.3" fill="#ffffff" style="animation-delay:1.2s"/>
+          <circle class="star" cx="407.9" cy="75.4" r="1.6" fill="#ffffff" style="animation-delay:0.9s"/>
+          <circle class="star" cx="193.2" cy="80.7" r="1.1" fill="#ffffff" style="animation-delay:2.4s"/>
+          <circle class="star" cx="202.6" cy="115.0" r="1.4" fill="#ffffff" style="animation-delay:1.1s"/>
+          <circle class="star" cx="297.3" cy="76.6" r="0.9" fill="#ffffff" style="animation-delay:0.6s"/>
+          <circle class="star" cx="331.5" cy="103.6" r="1.1" fill="#ffffff" style="animation-delay:1.8s"/>
+          <circle class="star" cx="272.9" cy="94.2" r="1.5" fill="#ffffff" style="animation-delay:2.1s"/>
+          <circle class="star" cx="219.0" cy="114.5" r="1.3" fill="#ffffff" style="animation-delay:2.6s"/>
+          <circle class="star" cx="344.2" cy="93.3" r="1.7" fill="#ffffff" style="animation-delay:0.4s"/>
+          <circle class="star" cx="263.9" cy="128.0" r="0.9" fill="#ffffff" style="animation-delay:1.5s"/>
+          <circle class="star" cx="166.1" cy="121.4" r="1.5" fill="#ffffff" style="animation-delay:1.7s"/>
+          <circle class="star" cx="381.9" cy="95.2" r="1.4" fill="#ffffff" style="animation-delay:1.8s"/>
+          <circle class="star" cx="305.6" cy="105.8" r="1.6" fill="#ffffff" style="animation-delay:2.8s"/>
+          <circle class="star" cx="278.3" cy="121.1" r="0.9" fill="#ffffff" style="animation-delay:2.1s"/>
+          </g>
+          <g class="sun"><circle cx="365" cy="104" r="34" fill="url(#sun)"/></g>
+          <g class="moon"><circle cx="214" cy="106" r="34" fill="url(#moonGlow)"/><circle cx="214" cy="106" r="13" fill="#f3f0dc"/><circle cx="210" cy="103" r="2.6" fill="#dcd6bb"/><circle cx="218" cy="110" r="1.8" fill="#dcd6bb"/><circle cx="219" cy="101" r="1.2" fill="#dcd6bb"/></g>
+          <g class="clouds">
+          <ellipse cx="210" cy="100" rx="26" ry="11.7" fill="#ffffff" opacity=".9"/>
+          <ellipse cx="232" cy="94" rx="20" ry="9.0" fill="#ffffff" opacity=".9"/>
+          <ellipse cx="290" cy="118" rx="22" ry="9.9" fill="#ffffff" opacity=".9"/>
+          <ellipse cx="308" cy="113" rx="15" ry="6.8" fill="#ffffff" opacity=".9"/>
+          </g>
+          <polygon class="city" points="150,216 150,190 168,190 168,202 184,202 184,186 202,186 202,208 216,208 216,194 238,194 238,182 260,182 260,198 274,198 274,206 290,206 290,188 316,188 316,200 336,200 336,180 356,180 356,196 376,196 376,186 398,186 398,204 412,204 412,192 420,192 420,216" fill="#a9bccb"/>
+          <rect class="city-light" x="159" y="200.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.80s"/>
+          <rect class="city-light" x="187" y="196.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.00s"/>
+          <rect class="city-light" x="187" y="203.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.10s"/>
+          <rect class="city-light" x="193" y="190.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.80s"/>
+          <rect class="city-light" x="193" y="196.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.44s"/>
+          <rect class="city-light" x="193" y="203.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:3.07s"/>
+          <rect class="city-light" x="219" y="198.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.97s"/>
+          <rect class="city-light" x="231" y="204.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.88s"/>
+          <rect class="city-light" x="241" y="186.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:3.10s"/>
+          <rect class="city-light" x="241" y="199.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.26s"/>
+          <rect class="city-light" x="247" y="186.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.41s"/>
+          <rect class="city-light" x="247" y="192.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.33s"/>
+          <rect class="city-light" x="247" y="199.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:0.81s"/>
+          <rect class="city-light" x="253" y="186.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.76s"/>
+          <rect class="city-light" x="299" y="192.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:3.14s"/>
+          <rect class="city-light" x="311" y="192.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.84s"/>
+          <rect class="city-light" x="311" y="198.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.45s"/>
+          <rect class="city-light" x="319" y="204.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:0.98s"/>
+          <rect class="city-light" x="325" y="204.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.22s"/>
+          <rect class="city-light" x="331" y="204.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:0.94s"/>
+          <rect class="city-light" x="339" y="184.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.19s"/>
+          <rect class="city-light" x="339" y="190.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.75s"/>
+          <rect class="city-light" x="339" y="197.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:3.07s"/>
+          <rect class="city-light" x="345" y="184.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.46s"/>
+          <rect class="city-light" x="345" y="190.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.75s"/>
+          <rect class="city-light" x="345" y="197.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:3.01s"/>
+          <rect class="city-light" x="351" y="184.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.06s"/>
+          <rect class="city-light" x="351" y="190.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.07s"/>
+          <rect class="city-light" x="351" y="197.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.49s"/>
+          <rect class="city-light" x="359" y="200.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:0.86s"/>
+          <rect class="city-light" x="379" y="190.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.21s"/>
+          <rect class="city-light" x="379" y="196.5" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.17s"/>
+          <rect class="city-light" x="385" y="203.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.75s"/>
+          <rect class="city-light" x="391" y="190.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:2.81s"/>
+          <rect class="city-light" x="415" y="196.0" width="3" height="3.5" fill="#ffd98a" style="transition-delay:1.38s"/>
+          <path class="hills" d="M150 216 q 60 -24 130 -6 t 140 -10 v 16 z" fill="#9cc29a"/>
+          <polygon class="glare" points="170.0,66.0 210.0,66.0 160.0,216.0 120.0,216.0" fill="#ffffff" opacity=".18"/>
+          </g>
+          <rect class="mullion" x="237.0" y="66" width="6" height="150" fill="#59646d"/>
+          <rect class="mullion" x="327.0" y="66" width="6" height="150" fill="#59646d"/>
+          <rect class="mullion" x="150" y="138.0" width="270" height="6" fill="#59646d"/>
+          <polygon class="beam-day" points="156.0,230.0 414.0,230.0 490.0,380.0 100.0,380.0" fill="url(#beam)"/>
+          <polygon class="beam-night" points="156.0,230.0 414.0,230.0 490.0,380.0 100.0,380.0" fill="url(#beamNight)"/>
+          <polygon points="814.0,106.8 848.0,108.9 848.0,127.8 814.0,122.8" fill="#2f9a5f"/>
+          <polygon class="lamp-cone" points="284.0,46.0 316.0,46.0 425.0,330.0 175.0,330.0" fill="url(#cone)"/>
+          <ellipse class="lamp-pool" cx="300" cy="330" rx="160" ry="44" fill="url(#pool)"/>
+          <line x1="300" y1="0" x2="300" y2="30" stroke="#6d6a63" stroke-width="2"/>
+          <ellipse cx="300" cy="70" rx="90" ry="46" fill="url(#lampGlow)"/>
+          <polygon points="278.0,46.0 322.0,46.0 312.0,30.0 288.0,30.0" fill="#4b5254"/>
+          <ellipse cx="300" cy="46" rx="20" ry="4" fill="#fff6d8"/>
+          <polygon class="lamp-cone" points="584.0,46.0 616.0,46.0 725.0,330.0 475.0,330.0" fill="url(#cone)"/>
+          <ellipse class="lamp-pool" cx="600" cy="330" rx="160" ry="44" fill="url(#pool)"/>
+          <line x1="600" y1="0" x2="600" y2="30" stroke="#6d6a63" stroke-width="2"/>
+          <ellipse cx="600" cy="70" rx="90" ry="46" fill="url(#lampGlow)"/>
+          <polygon points="578.0,46.0 622.0,46.0 612.0,30.0 588.0,30.0" fill="#4b5254"/>
+          <ellipse cx="600" cy="46" rx="20" ry="4" fill="#fff6d8"/>
           </svg>
           <div class="board" id="board" role="img" aria-label="Склад 5 на 5 клеток"></div>
+          <div class="lamp-light" aria-hidden="true"></div>
         </div>
         <div class="stats">
           <div class="stat"><span>Пройдено</span><strong id="distanceStat">0 / 8</strong></div>
@@ -754,7 +947,9 @@
           box([0.35, 0.35, 5.2], [1.25, 2.15, 0.6], steel)
         );
         const cabin = box([3, 2.2, 2.4], [0, -0.6, 2.1], "#f3efe6");
-        cabin.querySelector(".ft").innerHTML = '<b class="bot-visor"><b class="bot-eye"></b><b class="bot-eye"></b></b>';
+        const face = cabin.querySelector(".ft");
+        face.classList.add("lit");
+        face.innerHTML = '<b class="bot-visor"><b class="bot-eye"></b><b class="bot-eye"></b></b>';
         head.append(cabin, box([3.4, 2.6, 0.3], [0, -0.6, 4.5], yellow), box([0.25, 0.25, 0.9], [0.9, -1.2, 4.8], "#9aa3a5"), box([0.6, 0.6, 0.4], [0.9, -1.2, 5.7], "#e98b5a"));
         const forkCrate = box([3.2, 2.6, 2.4], [0, 3.8, 0.65], "linear-gradient(90deg, #c99a5b 42%, #ead6a8 42% 58%, #c99a5b 58%)", "fork-parcel");
         carriage.append(
@@ -764,7 +959,7 @@
           forkCrate
         );
         anim.append(head, carriage);
-        rig.append(anim);
+        rig.append(div("bot-beam"), anim);
         bot.append(div("bot-shadow"), rig);
         return bot;
       }
@@ -1209,6 +1404,7 @@ Q(ждать) = (1 − p)(−2 + 0.9·4.25) + p(1 + 0.9·(−1))  = 1.825 − 1.
               <li><b>▶ Автопилот</b> — робот сам проверяет датчик и выполняет совет.</li>
               <li><b>🎲 Новая карта</b> (клавиша N) — другие стеллажи, путь всегда есть. <b>Карта из задания</b> — вернуть исходную.</li>
               <li><b>Вид сверху</b> и <b>f / g / h</b> — другой ракурс и числа A* на клетках.</li>
+              <li><b>🌙 Ночь / ☀️ День</b> (клавиша T) — ночная смена: солнце садится, восходит луна, склад освещают только лампы.</li>
               <li><b>Enter</b> — выполнить совет, <b>R</b> — заново, <b>Esc</b> — закрыть это окно.</li>
             </ul>
             <h4>Очки</h4>
@@ -1225,6 +1421,29 @@ Q(ждать) = (1 − p)(−2 + 0.9·4.25) + p(1 + 0.9·(−1))  = 1.825 − 1.
       }
       function closeExplain() { $("modal").classList.remove("open"); }
 
+      // ---------- Day / night theme ----------
+      const root = document.documentElement;
+      function showTheme() {
+        const dark = root.dataset.theme === "dark";
+        const button = $("themeBtn");
+        button.textContent = dark ? "☀️ День" : "🌙 Ночь";
+        button.setAttribute("aria-pressed", String(dark));
+        button.setAttribute("aria-label", dark ? "Включить дневную тему" : "Включить ночную тему");
+      }
+      function toggleTheme() {
+        root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+        try { localStorage.setItem("warehouse-theme", root.dataset.theme); } catch (error) { /* storage unavailable */ }
+        const room = document.querySelector(".room");
+        room.classList.remove("sky-shift");
+        void room.getBoundingClientRect();
+        room.classList.add("sky-shift");
+        clearTimeout(toggleTheme.timer);
+        toggleTheme.timer = setTimeout(() => room.classList.remove("sky-shift"), 3800);
+        showTheme();
+        toast(root.dataset.theme === "dark" ? "Ночная смена: светят только лампы." : "Доброе утро! Дневная смена.");
+      }
+      showTheme();
+
       // ---------- Events ----------
       $("scanBtn").addEventListener("click", () => {
         const alert = Math.random() < (actualBlocked ? SENSOR.alertBlocked : SENSOR.alertClear);
@@ -1239,6 +1458,7 @@ Q(ждать) = (1 − p)(−2 + 0.9·4.25) + p(1 + 0.9·(−1))  = 1.825 − 1.
         if (finished) resetGame();
         setAutopilot(true);
       });
+      $("themeBtn").addEventListener("click", toggleTheme);
       $("newMapBtn").addEventListener("click", () => loadMap(randomWalls(walls), false));
       $("standardMapBtn").addEventListener("click", () => loadMap(new Set(STANDARD_WALLS), true));
       $("viewBtn").addEventListener("click", () => {
@@ -1264,6 +1484,7 @@ Q(ждать) = (1 − p)(−2 + 0.9·4.25) + p(1 + 0.9·(−1))  = 1.825 − 1.
         const k = event.key.toLowerCase();
         if (k === "r" || k === "к") resetGame("Новая попытка на той же карте.");
         if (k === "n" || k === "т") loadMap(randomWalls(walls), false);
+        if (k === "t" || k === "е") toggleTheme();
         if (event.key === "Enter") execute();
       });
       if ("ResizeObserver" in window) new ResizeObserver(() => placeBot(true)).observe(board);
