@@ -1,11 +1,50 @@
-# Declaration of AI Use
+<!-- Before signing: make the "What the team did" list match what each of you
+     actually did, and remove anything that is not true. -->
 
-I declare that the project "Mini Campus Delivery Robot" was developed with support from an AI assistant for code generation, documentation drafting, and explanation support. The AI assistant helped generate the structure of the project, the logic for the interactive interface, and the initial written content.
+# AI Usage Declaration
 
-I reviewed all formulas and logic, verified the correctness of the A* path, Bayesian update, and MDP decision calculations, and tested the final output. I am fully responsible for the final content, implementation, and understanding of the submitted project.
+**Project:** Mini Campus Delivery Robot
+**Course:** AI Fundamentals — Final Project
+**Team:** Ramazan G., Merey S., Ali I.
 
-I confirm that I can explain every part of the project and answer questions about the implemented algorithms during the oral defense.
+## AI tools used
 
-Student names: Ramazan G., Merey S., Ali I.
-Date: ____________________
-Signature: ____________________
+- **Claude (Anthropic)**, an AI assistant, used through Claude Code.
+
+## What the AI assistant was used for
+
+- Writing and revising the code: the A*, Bayes and MDP implementation in
+  `main.py`, the unit tests in `tests/`, the simulation study in
+  `experiment.py` and the interactive web demo `game.html`.
+- Drafting the documentation: `README.md`, `REPORT.md`, the slide deck and its
+  speaker notes, `PRESENTATION.md`.
+- Suggesting parts of the analysis: the comparison with baseline policies, the
+  sensor-noise sweep and the calibration check. While writing the tests the
+  assistant also found that A* expanded every free cell because of its
+  tie-breaking rule, and proposed the fix.
+
+## What the team did
+
+- Chose the project from the course's list of project ideas and the three
+  syllabus topics it covers (A* search, Bayes' rule, MDP).
+- Defined the requirements for the demo (warehouse setting, forklift robot,
+  random maps, day/night themes, topic explanations) and reviewed every version.
+- Ran the program, the 33 unit tests and the experiment, and checked the key
+  numbers by hand: `P(alert) = 0.34`, `P(blocked | alert) = 0.375`,
+  `Q(Move) = −1.644`, `Q(Wait) = 1.178`, threshold `p* = 0.300`.
+- Divided the work by algorithm (see `CONTRIBUTION_STATEMENT.md`); each member
+  reviewed and tested their part, committed it to the repository and presents
+  it at the defense.
+- Prepared and recorded the demo video and rehearsed the defense.
+
+## Responsibility
+
+We have read and understood all submitted code and documents. We are
+responsible for their correctness, and each of us can explain every algorithm
+and every result in the project during the oral defense.
+
+| Name | Date | Signature |
+|---|---|---|
+| Ramazan G. | | |
+| Merey S. | | |
+| Ali I. | | |
