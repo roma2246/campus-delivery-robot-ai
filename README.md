@@ -4,6 +4,30 @@
 **Project type:** small, reproducible simulation  
 **Student/team:** Ramazan G., Merey S., Ali I.
 
+**Live demo:** https://campus-delivery-robot-ai.vercel.app/
+
+## Deliverables
+
+| Deliverable | Where |
+|---|---|
+| Working application and live demo | [campus-delivery-robot-ai.vercel.app](https://campus-delivery-robot-ai.vercel.app/) · offline: open `game.html` · CLI: `python3 main.py` |
+| GitHub repository | this repository |
+| Technical report | [`REPORT.md`](REPORT.md) |
+| 5–7 slide presentation | [slides online](https://claude.ai/artifact/XVg5fLTTqdMjCFxc8kYnXv) · outline and defense plan: [`PRESENTATION.md`](PRESENTATION.md) |
+| 2–3 minute demo video | TODO: add the video link |
+| AI usage declaration | [`AI_DECLARATION.md`](AI_DECLARATION.md) |
+| Team contribution statement | [`CONTRIBUTION_STATEMENT.md`](CONTRIBUTION_STATEMENT.md) |
+| Tests and results | [`tests/`](tests) (33 unit tests) · [`results/experiment_results.md`](results/experiment_results.md) |
+
+## Quick start
+
+```bash
+python3 main.py                            # A* → Bayes → MDP for one sensor alert
+python3 -m unittest discover -s tests -v   # 33 tests
+python3 experiment.py                      # 10,000 simulated deliveries, tables and charts
+open game.html                             # the interactive warehouse demo
+```
+
 ## Project idea
 
 A campus robot must carry a package from a start cell to a destination on a

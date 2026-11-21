@@ -1,39 +1,50 @@
-# Presentation outline for the defense
+# Presentation and defense plan
 
-## Slide 1 — Project title and problem
-- Title: Mini Campus Delivery Robot
-- Problem: a delivery robot must move across campus safely and efficiently.
-- Goal: combine route planning, uncertainty estimation, and decision-making in one system.
+**Slides (7):** https://claude.ai/artifact/XVg5fLTTqdMjCFxc8kYnXv — speaker notes
+are attached to every slide. The deck can be exported to PDF or PowerPoint
+from its Share menu.
 
-## Slide 2 — Why this project matters
-- Real-world robotics requires path planning and decision-making.
-- The project is based on a practical scenario: package delivery under uncertainty.
-- We combine several AI methods to solve a single real mission.
+**Live demo:** https://campus-delivery-robot-ai.vercel.app/ (backup: open
+`game.html` locally, no internet needed).
 
-## Slide 3 — A* path planning
-- Explain the 5x5 grid map and obstacles.
-- Show how A* finds a shortest path using Manhattan distance.
-- Mention why this is suitable for route optimization.
+## Slides
 
-## Slide 4 — Bayesian risk estimation
-- Explain the sensor and probability of blockage.
-- Show how prior probability is updated using a sensor alert.
-- Explain the difference between low-risk and high-risk corridor states.
+| # | Slide | Key message | Presenter |
+|---|---|---|---|
+| 1 | Mini Campus Delivery Robot | One delivery task, three AI methods working as one pipeline | Ramazan |
+| 2 | Task | Route → sensor reading → risk → decision, every turn; what the repository contains | Ramazan |
+| 3 | A* | `f = g + h`, Manhattan heuristic is admissible and consistent; tie-breaking on larger `g` cut expansions from 23 to 9 | Ramazan |
+| 4 | Bayes' rule | Alert raises the risk from 15% to 37.5%, not to 85%; predicted 36.3% vs observed 36.8% in 10,000 deliveries | Merey |
+| 5 | MDP | `Q(Move) = 13.15 − 39.45p`, `Q(Wait) = 1.825 − 1.725p`; wait when `p > 0.300` | Ali |
+| 6 | Testing | 33 unit tests in four files, 10,000 simulated deliveries per policy, 300 random maps | Ali |
+| 7 | Results and lessons | 100% delivered, 16× fewer collisions, 2× better than the reflex rule on a noisy sensor | Ali, then all |
 
-## Slide 5 — MDP and Bellman decision-making
-- Present the two actions: Move and Wait.
-- Explain how expected reward is calculated.
-- Describe why the robot waits when risk is high.
+## Defense timeline (as in the assignment)
 
-## Slide 6 — Demo and user interface
-- Show the interactive website and map.
-- Highlight the autopilot-style dashboard and decision panels.
-- Show how the website visualizes path planning, risk, and action selection.
+| Part | Time | Content | Presenter |
+|---|---|---|---|
+| Problem statement and objectives | 2 min | Slides 1–2 | Ramazan |
+| Live demo | 3–5 min | Script below | Merey |
+| Three AI topics | 2 min | Slides 3–5, about 40 s each | Ramazan, Merey, Ali |
+| Testing and results | — | Slides 6–7 if time allows, otherwise in Q&A | Ali |
+| Questions and answers | up to 3 min | Every member answers individually | all |
 
-## Slide 7 — Results and future work
-- Summarize the project outcome.
-- Mention that the solution is a working prototype and can be extended.
-- List possible improvements: more realistic noise, dynamic obstacles, longer-horizon planning.
+## Live demo script
 
-## Short oral defense script (about 1–2 minutes)
-"Our project is called Mini Campus Delivery Robot. The goal is to help a robot carry a package across a small campus map while avoiding blocked corridors and making safe decisions. We combined three AI methods into one system. First, A* search calculates the shortest route using a grid and Manhattan distance. Second, Bayesian inference updates the probability that the next corridor is blocked after a sensor signal. Third, a Markov Decision Process evaluates whether the robot should move or wait by comparing expected rewards. In the demo, the robot plans a route, checks uncertainty, then chooses the best action. This makes the system useful as a basic example of intelligent autonomous behavior and demonstrates how different AI techniques can work together in one practical task."
+1. Open the site on **Карта из задания** (the assignment's 5×5 map with 2 walls).
+   Point at the arrows: the A* route, 8 moves; the panel shows 9 expanded cells
+   against 23 for search without a heuristic. Toggle **f / g / h** to show the
+   numbers on the cells.
+2. Press **Пример: тревога**. Risk 15% → 37.5%; the MDP panel shows
+   `Q(ехать) = −1.64`, `Q(ждать) = 1.18`, advice: wait. Press **Выполнить совет**:
+   the forklift looks around and waits.
+3. Press **Пример: чисто**. Risk drops below 30%; advice: move. Execute it: the
+   forklift drives one cell.
+4. Turn on **▶ Автопилот** and let the forklift deliver the parcel: it lifts the
+   box and spins around.
+5. Press **🎲 Новая карта** once: different racks, A* re-plans; a path always
+   exists because the generator checks it with BFS.
+6. Optional, if time is left: open one **!** explanation or switch day/night.
+
+Backup: if the site or the internet fails, run `python3 main.py` and
+`python3 main.py --no-alert` in a terminal; they print the same numbers.
