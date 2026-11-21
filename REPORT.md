@@ -36,7 +36,7 @@ A* route ──► next corridor ──► noisy sensor ──► Bayes posterio
 |---|---|
 | Algorithms and CLI demo | `main.py` |
 | Simulation study | `experiment.py` → `results/` |
-| Unit tests (33) | `tests/` |
+| Unit tests (38) | `tests/` |
 | Interactive warehouse demo (3D forklift, random maps, explanations) | `game.html` |
 
 ## 5. Algorithms
@@ -103,6 +103,29 @@ whenever the corridor is more than 30% likely to be blocked.
 
 ![Q-values and the break-even risk](results/q_values.png)
 
+#### Value iteration: are the hand-set values good enough?
+
+To check the fixed values V(clear) = 5 and V(blocked) = −10, we solve the full
+MDP with value iteration, starting from V = 0 and repeating
+
+```
+V(s) ← max_a [ R(s, a) + γ Σ_s′ T(s, a, s′) V(s′) ]
+```
+
+until no value changes by more than 10⁻⁹ (219 iterations):
+
+| | V* | Optimal action |
+|---|---:|---|
+| clear | 88.904 | Move |
+| blocked | 76.575 | Wait |
+
+The result agrees with solving the two linear Bellman equations of that policy
+directly (0.19·Vc − 0.09·Vb = 10, −0.54·Vc + 0.64·Vb = 1). Using V* in the
+belief-weighted Q-values (the QMDP approximation) shifts the break-even risk
+from 0.300 to **0.310**. After an alert (p = 0.375) the robot still waits
+(Q(Wait) = 77.13 > Q(Move) = 74.74), and without an alert (p = 0.034) it still
+moves, so the decision rule is not an artefact of the hand-set values.
+
 ## 6. Implementation
 - **Python 3.10+, standard library only** for the algorithms, demo and tests;
   matplotlib is used only to draw the two charts.
@@ -120,13 +143,13 @@ whenever the corridor is more than 30% likely to be blocked.
   The **!** buttons open worked explanations of each algorithm.
 
 ## 7. Testing
-`python3 -m unittest discover -s tests -v` runs **33 tests, all passing**:
+`python3 -m unittest discover -s tests -v` runs **38 tests, all passing**:
 
 | Area | What is verified |
 |---|---|
 | A\* (11 tests) | path starts/ends correctly, is connected, avoids walls; optimal length from **every** free cell (checked against an independent BFS); heuristic admissible and consistent; A\* expands fewer states than uniform-cost search; invalid start/goal and unreachable goal raise errors; replanning around an added wall |
 | Bayes (7) | hand-computed values 0.34 / 0.375 / 0.66 / 0.034; posteriors sum to 1; an alert always raises and silence always lowers the risk; certain priors stay certain; impossible observation raises; Monte Carlo frequency over 200,000 samples matches 0.375 within 0.01 |
-| MDP (6) | Q-values −1.644 / 1.178 / 11.805 / 1.766; closed-form lines; break-even 0.300 and the decision flip on each side of it; transition probabilities valid |
+| MDP (11) | Q-values −1.644 / 1.178 / 11.805 / 1.766; closed-form lines; break-even 0.300 and the decision flip on each side of it; transition probabilities valid; value iteration converges to the closed-form solution of the Bellman equations (88.904 / 76.575), gives the policy clear → Move, blocked → Wait, and keeps both sensor decisions with threshold 0.310 |
 | Demo + simulation (9) | CLI output; reproducible simulation; delivered episodes make exactly 8 moves; Bayes + MDP beats ignoring the sensor; equals the reflex rule on the project sensor and beats it on a noisy one; belief calibration |
 
 ## 8. Results
@@ -193,12 +216,12 @@ confirms that the Bayesian update and the belief propagation are correct.
 ## 10. Limitations
 - Fixed 5×5 map; the route is not replanned when a corridor stays blocked.
 - Sensor probabilities and rewards are illustrative, not measured.
-- The MDP uses a one-step lookahead with hand-chosen next-state values
-  V(clear) = 5 and V(blocked) = −10 instead of values computed by value
-  iteration, and it does not model the value of information (a POMDP would).
+- The robot decides with a one-step lookahead over its belief. Value
+  iteration solves the fully observed MDP, but the value of taking another
+  sensor reading is not modelled (a POMDP would).
 
 ## 11. Future work
-- Compute V(s) with value iteration and compare with the hand-chosen values.
+- Solve the belief-space MDP (POMDP) so that extra sensor readings have a value.
 - Replan with A\* when a corridor is blocked for several turns.
 - Use several sensor readings per turn and a learned sensor model.
 - Larger campus maps with multiple deliveries.

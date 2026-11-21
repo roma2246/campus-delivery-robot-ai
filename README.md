@@ -17,13 +17,13 @@
 | 2–3 minute demo video | TODO: add the video link |
 | AI usage declaration | [`AI_DECLARATION.md`](AI_DECLARATION.md) |
 | Team contribution statement | [`CONTRIBUTION_STATEMENT.md`](CONTRIBUTION_STATEMENT.md) |
-| Tests and results | [`tests/`](tests) (33 unit tests) · [`results/experiment_results.md`](results/experiment_results.md) |
+| Tests and results | [`tests/`](tests) (38 unit tests) · [`results/experiment_results.md`](results/experiment_results.md) |
 
 ## Quick start
 
 ```bash
 python3 main.py                            # A* → Bayes → MDP for one sensor alert
-python3 -m unittest discover -s tests -v   # 33 tests
+python3 -m unittest discover -s tests -v   # 38 tests
 python3 experiment.py                      # 10,000 simulated deliveries, tables and charts
 open game.html                             # the interactive warehouse demo
 ```
@@ -50,7 +50,8 @@ The two main topics were selected from the first seven weeks of the syllabus:
 To meet the Final Project requirement for at least three algorithms from
 different topics, the project also uses **Week 5 — Markov decision processes
 and reinforcement learning**. The MDP uses a two-state transition model and
-one Bellman update to compare `Move` and `Wait`. All selected material is
+one Bellman update to compare `Move` and `Wait`, and value iteration solves
+the full MDP to check that decision. All selected material is
 before Week 8.
 
 ## Algorithms and assumptions
@@ -106,6 +107,19 @@ are `Q(Move) = −1.644` and `Q(Wait) = 1.178`, so the robot waits. With no aler
 the posterior blockage probability falls to about `0.034`, and the robot
 chooses to move. This is a deliberately small, hypothetical model, not a
 trained or production controller.
+
+### Value iteration
+
+The hand-set next-state values are checked by solving the full MDP.
+`value_iteration()` repeats `V(s) ← max_a [R(s, a) + γ Σ_s' T(s, a, s') V(s')]`
+until no value changes by more than 1e-9 (219 iterations) and finds
+`V*(clear) = 88.904`, `V*(blocked) = 76.575`. If the robot knew the state, the
+optimal policy would be: clear → `Move`, blocked → `Wait`. Putting `V*` into the
+same belief-weighted formula (the QMDP approximation) moves the break-even risk
+from 0.300 to 0.310, so the robot makes the same choice after an alert
+(`Q(Wait) = 77.13 > Q(Move) = 74.74`) and after no alert (`Move`). `main.py`
+prints this as step 4; the tests check it against the closed-form solution of
+the Bellman equations.
 
 ## Interactive game website
 
@@ -168,7 +182,7 @@ python3 experiment.py
 The default run prints each algorithm's input, key calculation, output, and a
 short explanation. `--no-alert` demonstrates how the Bayesian update changes
 the MDP action. `--test` runs the quick built-in checks; the `tests/` suite
-(33 unit tests) covers A* optimality from every cell, heuristic admissibility
+(38 unit tests) covers A* optimality from every cell, heuristic admissibility
 and consistency, the Bayes and Bellman numbers, the decision threshold and the
 simulation. `experiment.py` runs 10,000 simulated deliveries per policy and
 writes `results/experiment_results.md` plus two charts (the charts need
@@ -252,14 +266,15 @@ tie-breaking rule described above.
 3. Explain the two expected-reward calculations and why the robot waits.
 4. Run `python3 main.py --no-alert`; compare the updated probability and
    explain why the action changes to `Move`.
-5. Run `python3 -m unittest discover -s tests -v` to show the 33 tests passing.
+5. Run `python3 -m unittest discover -s tests -v` to show the 38 tests passing.
 6. Show `results/noise_sweep.png`: why Bayes + MDP matters once the sensor is noisy.
 
 ## Limitations and future development
 
 The map is static, the sensor model and rewards are hypothetical, and the MDP
-uses a one-step lookahead with hand-chosen next-state values `V(clear) = 5`,
-`V(blocked) = −10` rather than values computed by value iteration. A
+decides with a one-step lookahead over the belief; value iteration solves the
+fully observed MDP, but the value of an extra sensor reading (a POMDP) is not
+modelled. A
 future version could add multiple sensor readings, dynamic obstacle updates,
 replanning, longer-horizon value iteration, and measured sensor probabilities.
 No real campus, student, or personal data is used.

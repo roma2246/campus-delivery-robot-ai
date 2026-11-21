@@ -22,6 +22,10 @@
   sensor-noise sweep and the calibration check. While writing the tests the
   assistant also found that A* expanded every free cell because of its
   tie-breaking rule, and proposed the fix.
+- Producing the two demo videos: both were recorded and assembled by scripts
+  from the working website; the narration is synthesized speech (a macOS
+  system voice) and the background music of the animated video was generated
+  by a script.
 
 ## What the team did
 
@@ -29,7 +33,7 @@
   syllabus topics it covers (A* search, Bayes' rule, MDP).
 - Defined the requirements for the demo (warehouse setting, forklift robot,
   random maps, day/night themes, topic explanations) and reviewed every version.
-- Ran the program, the 33 unit tests and the experiment, and checked the key
+- Ran the program, the 38 unit tests and the experiment, and checked the key
   numbers by hand: `P(alert) = 0.34`, `P(blocked | alert) = 0.375`,
   `Q(Move) = −1.644`, `Q(Wait) = 1.178`, threshold `p* = 0.300`.
 - Divided the work by algorithm (see `CONTRIBUTION_STATEMENT.md`); each member
