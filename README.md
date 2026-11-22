@@ -54,6 +54,18 @@ one Bellman update to compare `Move` and `Wait`, and value iteration solves
 the full MDP to check that decision. All selected material is
 before Week 8.
 
+### Why these three methods
+
+| Method | Question it answers | Why this method |
+|---|---|---|
+| A* search | Which way to the parcel? | The map is known and moves cost the same: A* finds the optimal route like BFS or uniform-cost search, but the Manhattan heuristic cuts the expanded states from 23 to 9 |
+| Bayes' rule | How likely is the next corridor blocked? | The corridor cannot be seen and the sensor makes mistakes: Bayes combines the base rate (15%) with the sensor's reliability, so an alert means 37.5%, not 85% |
+| MDP: Bellman update, value iteration | Move or wait? | A collision costs more than waiting, and a corridor may clear: the MDP weighs both and gives the break-even risk 0.300 |
+
+None of them solves the task alone: A* ignores uncertainty, Bayes' rule gives a
+probability but no action, and the MDP needs the route and the risk as inputs.
+Details and alternatives: [`REPORT.md`](REPORT.md), section 5.
+
 ## Algorithms and assumptions
 
 ### A* search

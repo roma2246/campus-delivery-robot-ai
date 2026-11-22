@@ -41,7 +41,23 @@ A* route ──► next corridor ──► noisy sensor ──► Bayes posterio
 
 ## 5. Algorithms
 
+Each subsection says how the algorithm works, why we chose it and what it
+contributes. Together they answer the three questions of Section 1: which way
+to go, how likely the next corridor is blocked, and whether to move or wait.
+None of them solves the task alone: A\* ignores uncertainty, Bayes' rule gives
+a probability but no action, and the MDP needs the route and the risk as inputs.
+
 ### 5.1 A* search
+- **Why A\*:** the robot knows the map and every move costs the same, so route
+  planning is a shortest-path search. With an admissible heuristic A\* returns
+  an optimal route, as uniform-cost search and BFS do, but it uses the distance
+  to the goal to skip cells that cannot lie on a shorter route (9 expanded
+  states against 23). Greedy best-first search is not guaranteed to find the
+  shortest route, and depth-first search is neither optimal nor efficient here.
+  The same algorithm also handles corridors with different costs, which a
+  larger campus would need.
+- **Role in the system:** it gives the route and the next corridor cell, which
+  the sensor then checks.
 - **Map:** 5×5 grid, start (0, 0), goal (4, 4), buildings at (1, 1) and (2, 1);
   4-connected moves, each costs 1.
 - **Heuristic:** Manhattan distance `h(n) = |r − r_goal| + |c − c_goal|`. It is
@@ -57,6 +73,15 @@ A* route ──► next corridor ──► noisy sensor ──► Bayes posterio
   route but expands **23** states.
 
 ### 5.2 Bayesian inference
+**Why Bayes' rule:** the robot cannot see whether the corridor is blocked; it
+only gets a sensor reading that is sometimes wrong. Bayes' rule is the standard
+way to combine what we knew before (corridors are blocked 15% of the time)
+with how reliable the sensor is (85% detection, 25% false alarms). Taking the
+reading at face value would treat every alert as a blocked corridor, although
+only 37.5% of alerts are; ignoring the sensor causes 16 times more collisions
+(Section 8.1). **Role in the system:** it turns the reading into the
+probability `P(blocked)` that the MDP needs to choose an action.
+
 Prior `P(B) = 0.15`; sensor model `P(alert | B) = 0.85`, `P(alert | ¬B) = 0.25`.
 
 After an **alert**:
@@ -74,6 +99,17 @@ model, becomes the prior of the next turn:
 `b′ = (1 − b)·T(a, clear) + b·T(a, blocked)`.
 
 ### 5.3 MDP decision
+**Why an MDP:** the decision has uncertain outcomes and a trade-off. Moving into
+a blocked corridor is expensive (−20), waiting costs time (−2), and while the
+robot waits the corridor may clear. An MDP describes exactly this with states,
+actions, transition probabilities, rewards and a discount for urgency, and the
+Bellman equation turns the risk from Bayes' rule into the action with the
+higher expected value instead of a hand-picked rule. It also gives the
+threshold p\* = 0.300, which explains when the simple rule "alert → wait" is
+right and when it fails (Section 8.2). Value iteration solves the same MDP
+over a long horizon and checks the one-step decision. **Role in the system:**
+the final Move or Wait on every turn.
+
 States {clear, blocked}; actions {Move, Wait}; discount γ = 0.9.
 
 | | R(clear) | R(blocked) | P(next blocked \| clear) | P(next blocked \| blocked) |
