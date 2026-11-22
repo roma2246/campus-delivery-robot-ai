@@ -10,10 +10,11 @@
 ## AI tools used
 
 - **Claude (Anthropic)**, an AI assistant, used through Claude Code.
+- **GitHub Copilot**, used by Ali I. for his part of the MDP code.
 
-## What the AI assistant was used for
+## What Claude was used for
 
-- Writing and revising the code: the A*, Bayes and MDP implementation in
+- Writing and revising the code: the A*, Bayes and one-step MDP code in
   `main.py`, the unit tests in `tests/`, the simulation study in
   `experiment.py` and the interactive web demo `game.html`.
 - Drafting the documentation: `README.md`, `REPORT.md`, the slide deck and its
@@ -26,6 +27,12 @@
   from the working website; the narration is synthesized speech (a macOS
   system voice) and the background music of the animated video was generated
   by a script.
+
+## What GitHub Copilot was used for
+
+- Ali I.'s two commits, which add the MDP tests and value iteration
+  (`value_iteration()` in `main.py` and its tests in `tests/test_mdp.py`), list
+  GitHub Copilot as a co-author.
 
 ## What the team did
 
