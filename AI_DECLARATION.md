@@ -39,7 +39,10 @@
 - Divided the work by algorithm (see `CONTRIBUTION_STATEMENT.md`); each member
   reviewed and tested their part, committed it to the repository and presents
   it at the defense.
-- Prepared and recorded the demo video and rehearsed the defense.
+- Specified what the demo videos show (scenes, numbers, English narration) and
+  reviewed every version; the recording and the voice-over themselves were
+  produced by scripts, as described above.
+- Rehearsed the defense.
 
 ## Responsibility
 

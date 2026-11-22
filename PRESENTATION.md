@@ -15,7 +15,7 @@ from its Share menu.
 | 2 | Task | Route → sensor reading → risk → decision, every turn; what the repository contains | Ramazan |
 | 3 | A* | `f = g + h`, Manhattan heuristic is admissible and consistent; tie-breaking on larger `g` cut expansions from 23 to 9 | Ramazan |
 | 4 | Bayes' rule | Alert raises the risk from 15% to 37.5%, not to 85%; predicted 36.3% vs observed 36.8% in 10,000 deliveries | Merey |
-| 5 | MDP | `Q(Move) = 13.15 − 39.45p`, `Q(Wait) = 1.825 − 1.725p`; wait when `p > 0.300`; value iteration confirms it (`V*` = 88.9 / 76.6, threshold 0.310) | Ali |
+| 5 | MDP | `Q(Move) = 13.15 − 39.45p`, `Q(Wait) = 1.825 − 1.725p`; wait when `p > 0.300`; value iteration: `V*` = 88.9 / 76.6 after 219 iterations, policy clear → Move, blocked → Wait | Ali |
 | 6 | Testing | 38 unit tests in four files, 10,000 simulated deliveries per policy, 300 random maps | Ali |
 | 7 | Results and lessons | 100% delivered, 16× fewer collisions, 2× better than the reflex rule on a noisy sensor | Ali, then all |
 
