@@ -110,16 +110,19 @@ trained or production controller.
 
 ### Value iteration
 
-The hand-set next-state values are checked by solving the full MDP.
-`value_iteration()` repeats `V(s) ← max_a [R(s, a) + γ Σ_s' T(s, a, s') V(s')]`
-until no value changes by more than 1e-9 (219 iterations) and finds
-`V*(clear) = 88.904`, `V*(blocked) = 76.575`. If the robot knew the state, the
-optimal policy would be: clear → `Move`, blocked → `Wait`. Putting `V*` into the
-same belief-weighted formula (the QMDP approximation) moves the break-even risk
-from 0.300 to 0.310, so the robot makes the same choice after an alert
-(`Q(Wait) = 77.13 > Q(Move) = 74.74`) and after no alert (`Move`). `main.py`
-prints this as step 4; the tests check it against the closed-form solution of
-the Bellman equations.
+For a longer horizon, `value_iteration()` repeatedly applies the Bellman
+optimality update `V(s) ← max_a [R(s, a) + γ Σ_s' T(s, a, s') V(s')]` to both
+states until no value changes by more than 1e-9. It returns the optimal state
+values, the policy (`Move` or `Wait` for each state) and the number of
+iterations: `V*(clear) = 88.904`, `V*(blocked) = 76.575` after 219 iterations,
+policy clear → `Move`, blocked → `Wait`. `main.py` prints this as step 4. The
+tests check that `V*` satisfies the Bellman equation, that `γ = 0` picks the
+best immediate reward, and that invalid parameters and non-convergence raise
+errors. This complements the one-step belief-based decision above; both use the
+same hypothetical transition and reward model. Using `V*` instead of the
+hand-set values in the belief-weighted formula would move the break-even risk
+only from 0.300 to 0.310 (`Q(Wait) = 77.13 > Q(Move) = 74.74` after an alert),
+so the robot's decisions stay the same.
 
 ## Interactive game website
 
@@ -181,9 +184,10 @@ python3 experiment.py
 
 The default run prints each algorithm's input, key calculation, output, and a
 short explanation. `--no-alert` demonstrates how the Bayesian update changes
-the MDP action. `--test` runs the quick built-in checks; the `tests/` suite
-(38 unit tests) covers A* optimality from every cell, heuristic admissibility
-and consistency, the Bayes and Bellman numbers, the decision threshold and the
+the MDP action. The demo also prints the converged value-iteration policy.
+`--test` runs the quick built-in checks; the `tests/` suite (38 unit tests)
+covers A* optimality from every cell, heuristic admissibility and consistency,
+the Bayes and Bellman numbers, value iteration, the decision threshold and the
 simulation. `experiment.py` runs 10,000 simulated deliveries per policy and
 writes `results/experiment_results.md` plus two charts (the charts need
 matplotlib; everything else uses only the standard library).
@@ -192,7 +196,7 @@ matplotlib; everything else uses only the standard library).
 
 | Path | Purpose |
 |---|---|
-| `main.py` | A*, uniform-cost baseline, Bayes update, one-step MDP, CLI demo |
+| `main.py` | A*, uniform-cost baseline, Bayes update, one-step MDP, value iteration, CLI demo |
 | `experiment.py` | Monte Carlo comparison of decision policies and sensor-noise sweep |
 | `tests/` | Unit tests for `main.py` and `experiment.py` |
 | `results/` | Generated tables and charts used in the report |
@@ -274,9 +278,9 @@ tie-breaking rule described above.
 The map is static, the sensor model and rewards are hypothetical, and the MDP
 decides with a one-step lookahead over the belief; value iteration solves the
 fully observed MDP, but the value of an extra sensor reading (a POMDP) is not
-modelled. A
-future version could add multiple sensor readings, dynamic obstacle updates,
-replanning, longer-horizon value iteration, and measured sensor probabilities.
+modelled. A future version could add multiple sensor readings, dynamic
+obstacle updates, replanning, a POMDP solver, and measured sensor
+probabilities.
 No real campus, student, or personal data is used.
 
 ## AI-use declaration

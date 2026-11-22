@@ -149,7 +149,7 @@ moves, so the decision rule is not an artefact of the hand-set values.
 |---|---|
 | A\* (11 tests) | path starts/ends correctly, is connected, avoids walls; optimal length from **every** free cell (checked against an independent BFS); heuristic admissible and consistent; A\* expands fewer states than uniform-cost search; invalid start/goal and unreachable goal raise errors; replanning around an added wall |
 | Bayes (7) | hand-computed values 0.34 / 0.375 / 0.66 / 0.034; posteriors sum to 1; an alert always raises and silence always lowers the risk; certain priors stay certain; impossible observation raises; Monte Carlo frequency over 200,000 samples matches 0.375 within 0.01 |
-| MDP (11) | Q-values −1.644 / 1.178 / 11.805 / 1.766; closed-form lines; break-even 0.300 and the decision flip on each side of it; transition probabilities valid; value iteration converges to the closed-form solution of the Bellman equations (88.904 / 76.575), gives the policy clear → Move, blocked → Wait, and keeps both sensor decisions with threshold 0.310 |
+| MDP (11) | Q-values −1.644 / 1.178 / 11.805 / 1.766; closed-form lines; break-even 0.300 and the decision flip on each side of it; transition probabilities valid; value iteration returns V* = 88.904 / 76.575 and the policy clear → Move, blocked → Wait; V* satisfies the Bellman optimality equation; γ = 0 picks the best immediate reward; invalid parameters and non-convergence raise errors |
 | Demo + simulation (9) | CLI output; reproducible simulation; delivered episodes make exactly 8 moves; Bayes + MDP beats ignoring the sensor; equals the reflex rule on the project sensor and beats it on a noisy one; belief calibration |
 
 ## 8. Results
