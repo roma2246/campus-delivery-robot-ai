@@ -83,6 +83,12 @@ the posterior blockage probability falls to about `0.034`, and the robot
 chooses to move. This is a deliberately small, hypothetical model, not a
 trained or production controller.
 
+For a longer horizon, `value_iteration()` repeatedly applies the Bellman
+optimality update to both states until the values converge. It returns the
+optimal state values, a policy (`Move` or `Wait` for each state), and the
+number of iterations. This complements the one-step belief-based decision
+above; both use the same hypothetical transition and reward model.
+
 ## Interactive game website
 
 Open `game.html` in a browser. The page is self-contained and needs no install,
@@ -143,9 +149,10 @@ python3 experiment.py
 
 The default run prints each algorithm's input, key calculation, output, and a
 short explanation. `--no-alert` demonstrates how the Bayesian update changes
-the MDP action. `--test` runs the quick built-in checks; the `tests/` suite
-(33 unit tests) covers A* optimality from every cell, heuristic admissibility
-and consistency, the Bayes and Bellman numbers, the decision threshold and the
+the MDP action. The demo also prints the converged value-iteration policy.
+`--test` runs the quick built-in checks; the `tests/` suite (38 unit tests)
+covers A* optimality from every cell, heuristic admissibility and consistency,
+the Bayes and Bellman numbers, value iteration, the decision threshold and the
 simulation. `experiment.py` runs 10,000 simulated deliveries per policy and
 writes `results/experiment_results.md` plus two charts (the charts need
 matplotlib; everything else uses only the standard library).
@@ -154,7 +161,7 @@ matplotlib; everything else uses only the standard library).
 
 | Path | Purpose |
 |---|---|
-| `main.py` | A*, uniform-cost baseline, Bayes update, one-step MDP, CLI demo |
+| `main.py` | A*, uniform-cost baseline, Bayes update, one-step MDP, value iteration, CLI demo |
 | `experiment.py` | Monte Carlo comparison of decision policies and sensor-noise sweep |
 | `tests/` | Unit tests for `main.py` and `experiment.py` |
 | `results/` | Generated tables and charts used in the report |
@@ -233,12 +240,13 @@ tie-breaking rule described above.
 
 ## Limitations and future development
 
-The map is static, the sensor model and rewards are hypothetical, and the MDP
-uses a one-step lookahead with hand-chosen next-state values `V(clear) = 5`,
-`V(blocked) = −10` rather than values computed by value iteration. A
-future version could add multiple sensor readings, dynamic obstacle updates,
-replanning, longer-horizon value iteration, and measured sensor probabilities.
-No real campus, student, or personal data is used.
+The map is static, and the sensor model, transitions, and rewards are
+hypothetical. The one-step belief-based decision uses hand-chosen next-state
+values `V(clear) = 5`, `V(blocked) = −10`; the separate value-iteration policy
+computes longer-horizon state values from the same assumed MDP. Future work
+could add multiple sensor readings, dynamic obstacle updates, replanning, and
+measured sensor probabilities. No real campus, student, or personal data is
+used.
 
 ## AI-use declaration
 

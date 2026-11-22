@@ -143,6 +143,20 @@ def bayes_obstacle_probability(
     return p_observation, posterior_blocked, 1.0 - posterior_blocked
 
 
+def _immediate_reward(action: str, state: str, rewards: MDPRewards) -> float:
+    if action == "Move":
+        return rewards.move_if_clear if state == "clear" else rewards.move_if_blocked
+    return rewards.wait_if_clear if state == "clear" else rewards.wait_if_blocked
+
+
+def _expected_next_value(action: str, state: str, values: dict[str, float]) -> float:
+    p_next_blocked = TRANSITION_BLOCKED[action][state]
+    return (
+        (1.0 - p_next_blocked) * values["clear"]
+        + p_next_blocked * values["blocked"]
+    )
+
+
 def mdp_action_values(
     p_blocked: float, rewards: MDPRewards
 ) -> dict[str, float]:
@@ -150,32 +164,62 @@ def mdp_action_values(
     p_clear = 1.0 - p_blocked
     values = {}
     for action in ("Move", "Wait"):
-        if action == "Move":
-            reward_by_state = {
-                "clear": rewards.move_if_clear,
-                "blocked": rewards.move_if_blocked,
-            }
-        else:
-            reward_by_state = {
-                "clear": rewards.wait_if_clear,
-                "blocked": rewards.wait_if_blocked,
-            }
-
         value = 0.0
         for state, state_probability in (
             ("clear", p_clear),
             ("blocked", p_blocked),
         ):
-            p_next_blocked = TRANSITION_BLOCKED[action][state]
-            expected_next_value = (
-                (1.0 - p_next_blocked) * STATE_VALUE["clear"]
-                + p_next_blocked * STATE_VALUE["blocked"]
-            )
             value += state_probability * (
-                reward_by_state[state] + DISCOUNT * expected_next_value
+                _immediate_reward(action, state, rewards)
+                + DISCOUNT * _expected_next_value(action, state, STATE_VALUE)
             )
         values[action] = value
     return values
+
+
+def value_iteration(
+    rewards: MDPRewards = MDPRewards(),
+    discount: float = DISCOUNT,
+    tolerance: float = 1e-9,
+    max_iterations: int = 10_000,
+) -> tuple[dict[str, float], dict[str, str], int]:
+    """Return optimal state values, the greedy policy, and iterations used."""
+    if not 0.0 <= discount < 1.0:
+        raise ValueError("Discount must be in [0, 1).")
+    if tolerance <= 0.0:
+        raise ValueError("Tolerance must be positive.")
+    if max_iterations <= 0:
+        raise ValueError("Maximum iterations must be positive.")
+
+    states = ("clear", "blocked")
+    actions = ("Move", "Wait")
+    values = {state: 0.0 for state in states}
+
+    for iteration in range(1, max_iterations + 1):
+        updated_values = {
+            state: max(
+                _immediate_reward(action, state, rewards)
+                + discount * _expected_next_value(action, state, values)
+                for action in actions
+            )
+            for state in states
+        }
+        delta = max(
+            abs(updated_values[state] - values[state]) for state in states
+        )
+        values = updated_values
+        if delta < tolerance:
+            policy = {
+                state: max(
+                    actions,
+                    key=lambda action: _immediate_reward(action, state, rewards)
+                    + discount * _expected_next_value(action, state, values),
+                )
+                for state in states
+            }
+            return values, policy, iteration
+
+    raise RuntimeError("Value iteration did not converge within max_iterations.")
 
 
 def break_even_probability(rewards: MDPRewards = MDPRewards()) -> float:
@@ -255,10 +299,16 @@ def run_demo(sensor_alert: bool = True) -> None:
     )
     print(f"   Break-even risk: wait when P(blocked) > {break_even_probability():.3f}")
     print(f"   Recommended action: {action}")
+    state_values, policy, iterations = value_iteration()
+    print("\n4) MDP value iteration")
+    print(f"   Converged in {iterations} iterations")
+    print(f"   Optimal state values: {state_values}")
+    print(f"   Policy: clear → {policy['clear']}; blocked → {policy['blocked']}")
     print(
         "\nExplanation: A* proposes the shortest static route, Bayes updates "
-        "the risk of its next corridor from the sensor, and the MDP chooses "
-        "the action with the larger expected reward."
+        "the risk of its next corridor from the sensor, the one-step MDP "
+        "compares immediate decisions, and value iteration computes a "
+        "longer-horizon policy."
     )
 
 
