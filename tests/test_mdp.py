@@ -19,6 +19,7 @@ from main import (  # noqa: E402
     bayes_obstacle_probability,
     break_even_probability,
     mdp_action_values,
+    value_iteration,
 )
 
 SENSOR = SensorModel(prior_blocked=0.15, alert_if_blocked=0.85, alert_if_clear=0.25)
@@ -64,6 +65,51 @@ class MDPTests(unittest.TestCase):
             for state, probability in row.items():
                 self.assertGreaterEqual(probability, 0.0, f"{action}/{state}")
                 self.assertLessEqual(probability, 1.0, f"{action}/{state}")
+
+    def test_value_iteration_returns_optimal_policy(self):
+        values, policy, iterations = value_iteration()
+        self.assertAlmostEqual(values["clear"], 88.9041096, places=6)
+        self.assertAlmostEqual(values["blocked"], 76.5753425, places=6)
+        self.assertEqual(policy, {"clear": "Move", "blocked": "Wait"})
+        self.assertGreater(iterations, 0)
+
+    def test_value_iteration_satisfies_bellman_equation(self):
+        values, _, _ = value_iteration(tolerance=1e-12)
+        rewards = {
+            "Move": {"clear": 10.0, "blocked": -20.0},
+            "Wait": {"clear": -2.0, "blocked": 1.0},
+        }
+        for state in ("clear", "blocked"):
+            expected = max(
+                rewards[action][state]
+                + main.DISCOUNT
+                * (
+                    (1.0 - main.TRANSITION_BLOCKED[action][state])
+                    * values["clear"]
+                    + main.TRANSITION_BLOCKED[action][state] * values["blocked"]
+                )
+                for action in ("Move", "Wait")
+            )
+            self.assertAlmostEqual(values[state], expected, places=10)
+
+    def test_zero_discount_selects_best_immediate_reward(self):
+        values, policy, _ = value_iteration(discount=0.0)
+        self.assertEqual(values, {"clear": 10.0, "blocked": 1.0})
+        self.assertEqual(policy, {"clear": "Move", "blocked": "Wait"})
+
+    def test_value_iteration_rejects_invalid_parameters(self):
+        for kwargs in (
+            {"discount": -0.1},
+            {"discount": 1.0},
+            {"tolerance": 0.0},
+            {"max_iterations": 0},
+        ):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                value_iteration(**kwargs)
+
+    def test_value_iteration_reports_nonconvergence(self):
+        with self.assertRaises(RuntimeError):
+            value_iteration(tolerance=1e-15, max_iterations=1)
 
 
 if __name__ == "__main__":
